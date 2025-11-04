@@ -1,0 +1,14 @@
+package com.ims.inventoryManagementSystem.repository;
+
+import com.ims.inventoryManagementSystem.entity.ActiveSession;
+import jakarta.transaction.Transactional;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface ActiveSessionRepository extends JpaRepository<ActiveSession,Long> {
+    ActiveSession getActiveSessionByEmailAndSessionId (String email, String sessionId);
+
+    @Transactional
+    void deleteByEmail (String email);
+
+    ActiveSession findByEmail (String email);
+}
