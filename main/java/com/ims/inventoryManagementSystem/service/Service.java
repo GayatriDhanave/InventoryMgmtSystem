@@ -1,14 +1,17 @@
 package com.ims.inventoryManagementSystem.service;
 
 import com.ims.inventoryManagementSystem.entity.*;
+import com.ims.inventoryManagementSystem.enums.UploadStatus;
 import com.ims.inventoryManagementSystem.repository.*;
 import org.springframework.data.domain.Page;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 @org.springframework.stereotype.Service
 public class Service implements IService {
@@ -27,6 +30,9 @@ public class Service implements IService {
 
     @Autowired
     private SuppilerRepository suppilerRepository;
+
+    @Autowired
+    private FileRepository fileRepository;
 
 
     @Override
@@ -56,8 +62,8 @@ public class Service implements IService {
     }
 
     @Override
-    public List<Products> getProductByNameAndSuppiler (String productName, Supplier supplier) {
-        return (List<Products>) productRepository.getProductsByProductNameAndSupplier(productName, supplier);
+    public Products getProductByNameAndSuppiler (String productName, Supplier supplier) {
+        return  productRepository.getProductsByProductNameAndSupplier(productName, supplier);
     }
 
     @Override
@@ -157,6 +163,41 @@ public class Service implements IService {
     @Override
     public int countProductsWithoutErrorRecords () {
         return productRepository.countProductsByErrorRecordsIsNull();
+    }
+
+    @Override
+    public List<Supplier> getAllSuppiler () {
+        return (List<Supplier>) suppilerRepository.findAll();
+    }
+
+    @Override
+    public long countSuppliers () {
+        return suppilerRepository.count();
+    }
+
+    @Override
+    public void saveFile (FileUpload fileUpload) {
+        fileRepository.save(fileUpload);
+    }
+
+    @Override
+    public Optional<FileUpload> findTopByEmailAndStatusNot (String email, String uploadStatus) {
+        return fileRepository.findTopByEmailAndStatusNot(email, uploadStatus);
+    }
+
+    @Override
+    public boolean existsByEmailAndStatusNot (String email, String uploadStatus) {
+        return fileRepository.existsByEmailAndStatusNot(email, uploadStatus);
+    }
+
+    @Override
+    public FileUpload getFileByEmailAndStatusIn (String email, List<? extends Serializable> list) {
+        return null;
+    }
+
+    @Override
+    public List<FileUpload> getFileUploadHistory (String email) {
+        return fileRepository.getFileUploadByEmail(email);
     }
 
 }

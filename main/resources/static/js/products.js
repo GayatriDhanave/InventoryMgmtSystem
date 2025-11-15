@@ -1,34 +1,17 @@
-document.addEventListener("DOMContentLoaded", function () {
+$(document).ready(function () {
+    productTableFunction();
 
-    document.getElementById("dashboardPage").style.display = "block";
 
-    const links = document.querySelectorAll(".nav-link[data-page]");
-    const pages = document.querySelectorAll(".page");
-
-    links.forEach(link => {
-        link.addEventListener("click", (e) => {
-            e.preventDefault();
-            const target = link.getAttribute("data-page");
-            pages.forEach(page => page.style.display = "none");
-
-            document.getElementById(target).style.display = "block";
-
-            links.forEach(l => l.classList.remove("active"));
-            link.classList.add("active");
-        });
-    });
-
-    document.getElementById("logoutBtn").addEventListener("click", () => {
-        alert("Are you sure to logout");
-        window.location.href = "/login.html";
-    });
 });
-
-$('#addProductModal').on('show.bs.modal', function () {
+function getAllCategories(){
     $.ajax({
         url: "http://localhost:8080/inventoryManagementSystem_war/products/getCategories",
         method: "GET",
         dataType: "json",
+        headers: {
+            email: sessionStorage.getItem('email'),
+            token: sessionStorage.getItem("token")
+        },
         success: function (response) {
 
             const data = response.data || [];
@@ -50,18 +33,24 @@ $('#addProductModal').on('show.bs.modal', function () {
             $('#productCategory').empty().append('<option>Error loading data</option>');
         }
     });
+}
 
+function getAllSuppliers(){
     $.ajax({
-        url: "http://localhost:8080/inventoryManagementSystem_war/supplier/getAllSupplier",
+        url: "http://localhost:8080/inventoryManagementSystem_war/supplier/getAllSuppliers",
         method: "GET",
         dataType: "json",
+        headers: {
+            email: sessionStorage.getItem('email'),
+            token: sessionStorage.getItem("token")
+        },
         success: function (response) {
 
-            const data = response.data || [];
+            const data = response.data.data || [];
             const $dropdown = $('#supplierDropdown');
 
             $dropdown.empty();
-            $dropdown.append('<option value="">-- Select a category --</option>');
+            $dropdown.append('<option value="">-- Select a supplier --</option>');
 
             if (data.length === 0) {
                 console.warn("No suppliers found in data array");
@@ -77,6 +66,54 @@ $('#addProductModal').on('show.bs.modal', function () {
             $('#supplierDropdown').empty().append('<option>Error loading data</option>');
         }
     });
+}
+
+function editProduct(selectedId){
+    $.ajax({
+        url: 'http://localhost:8080/inventoryManagementSystem_war/products/v1/getProduct?productId=' + selectedId,
+        method: 'GET',
+        headers: {
+            email: sessionStorage.getItem('email'),
+            token: sessionStorage.getItem("token")
+        },
+        success: function (resp) {
+            const product = resp.data;
+            $('#productId').val(product.id);
+            $('#productName').val(product.productName);
+            // $('#editProductCategory').val(product.category.categoryName);
+            const categoryDropdown = $('#productCategory');
+            categoryDropdown.empty();
+            categoryDropdown.append('<option value="">Select one option</option>');
+
+            if (product.supplierName!==null) {
+                categoryDropdown.append(
+                    `<option value="${product.categoryId}" selected>${product.category}</option>`
+                );
+            }
+            $('#price').val(product.price);
+            $('#quantity').val(product.quantity);
+            // $('#editSupplierDropdown').val(product.supplier.name);
+            const supplierDropdown = $('#supplierDropdown');
+            supplierDropdown.empty();
+            supplierDropdown.append('<option value="">Select one option</option>');
+
+            if (product.suppilerName!==null) {
+                supplierDropdown.append(
+                    `<option value="${product.supId}" selected>${product.suppilerName}</option>`
+                );
+            }
+            $('#addProductModal').modal('show');
+        },
+        error: function () {
+            alert('Failed to fetch product details.');
+        }
+    });
+}
+
+
+$('#addProductModal').on('show.bs.modal', function () {
+    getAllCategories();
+    getAllSuppliers();
 });
 
 
@@ -160,13 +197,17 @@ $('#addProductForm').validate({
         };
         $.ajax({
             type: "POST",
-            url: "http://localhost:8080/inventoryManagementSystem_war/products/addProduct",
+            url: "http://localhost:8080/inventoryManagementSystem_war/products/v1",
             contentType: "application/json",
             data: JSON.stringify(productData),
+            headers: {
+                email: sessionStorage.getItem('email'),
+                    token: sessionStorage.getItem("token")
+            },
             success: function (response) {
-                alert("Supplier added successfully!");
+                alert("Product added successfully!");
                 $('#addProductModal').modal('hide');
-                table.ajax.reload();
+                productTableFunction()
                 form.reset();
             },
             error: function (xhr) {
@@ -177,11 +218,7 @@ $('#addProductForm').validate({
 });
 
 
-$(document).ready(function () {
-    productTableFunction();
 
-
-});
 
 function productAjax() {
     const deferred = $.Deferred();
@@ -197,29 +234,24 @@ function productAjax() {
     };
 
     $.ajax({
-        url: 'http://localhost:8080/inventoryManagementSystem_war/products/getAllProducts',
+        url: 'http://localhost:8080/inventoryManagementSystem_war/products/v1',
         type: 'GET',
         data: filters,
         headers: {
             email: sessionStorage.getItem('email'),
-            sessionId: sessionStorage.getItem('sessionId')
+            token: sessionStorage.getItem("token")
         },
         dataType: 'json',
         success: function (resp) {
-            // const result = {
-            //     data: resp.data || [],
-            //     recordsTotal: resp.recordsTotal || 0,
-            //     recordsFiltered: resp.recordsFiltered || 0
-            // };
-
             const inner = resp.data;
 
             const result = {
-                data: inner.data || [], // ✅ main table array
-                recordsTotal: inner.totalRecords || 0, // ✅ correct totals
+                data: inner.data || [], 
+                recordsTotal: inner.totalRecords || 0, 
                 recordsFiltered: inner.filteredRecords || 0
             };
-            deferred.resolve(result); // ✅ one object, not multiple args
+            // $('productCount').append("Product Count<br> ${recordsTotal}");
+            deferred.resolve(result);
         },
         error: function (xhr) {
             if (xhr.status === 401) {
@@ -240,10 +272,11 @@ function productTableFunction() {
     $('#productsTable').DataTable({
         serverSide: true,
         processing: true,
-        ajax: function (data, callback, settings) { // ✅ correct param names
+        ajax: function (data, callback, settings) {
             productAjax()
                 .done(function (response) {
-                    callback(response); // ✅ correct callback
+                    callback(response);
+                    $('productCount').append("Product Count<br> ${response.recordsTotal}");
                 })
                 .fail(function (err) {
                     console.error("Ajax error:", err);
@@ -254,7 +287,7 @@ function productTableFunction() {
             {
         data: null,
         render: function(data, type, row) {
-            return `<input type="radio" name="productSelect" value="${row.productId}">`;
+            return `<input type="checkbox" name="productSelect" value="${row.productId}">`;
         },
         orderable: false
     },
@@ -263,7 +296,16 @@ function productTableFunction() {
             { data: 'category' },
             { data: 'suppiler' },
             { data: 'price' },
-            { data: 'quantity' }
+            { data: 'quantity' },
+            {"data": null,
+                "defaultContent": '<i class="fas fa-edit edit-icon"></i> <i class="fas fa-trash-alt delete-icon"></i> <i class="fa-solid fa-circle-info"></i>',
+                "render": function (data, type, row) {
+
+                    let icons = '<button id="editProductBtn" onclick="editProduct(${"#row.productId"})"> <i class="fas fa-edit edit-icon" data-id="' + row.id + '"></i> </button>';
+                    icons += '<button id="deleteProductBtn"> <i class="fas fa-trash-alt delete-icon" data-id="' + row.id + '"></i> </button>';
+                    icons += '<button id="viewProductBtn"> <i class="fa-solid fa-circle-info" data-id="' + row.id + '"></i> </button>';
+                    return icons;}
+            }
         ]
     });
 }
@@ -274,42 +316,9 @@ $('#editProductBtn').click(function () {
         alert("Please select a product to edit!");
         return;
     }
+    editProduct();
 
-    $.ajax({
-        url: 'http://localhost:8080/inventoryManagementSystem_war/products/getProduct?productId=' + selectedId,
-        method: 'GET',
-        success: function (resp) {
-            const product = resp.data;
-            $('#productId').val(product.id);
-            $('#editProductName').val(product.productName);
-            // $('#editProductCategory').val(product.category.categoryName);
-            const categoryDropdown = $('#editProductCategory');
-            categoryDropdown.empty();
-            categoryDropdown.append('<option value="">Select one option</option>');
 
-            if (product.supplier) {
-                categoryDropdown.append(
-                    `<option value="${product.category.id}" selected>${product.category.categoryName}</option>`
-                );
-            }
-            $('#productPrice').val(product.price);
-            $('#editProductQauntity').val(product.quantity);
-            // $('#editSupplierDropdown').val(product.supplier.name);
-            const supplierDropdown = $('#editSupplierDropdown');
-            supplierDropdown.empty();
-            supplierDropdown.append('<option value="">Select one option</option>');
-
-            if (product.supplier) {
-                supplierDropdown.append(
-                    `<option value="${product.supplier.supId}" selected>${product.supplier.name}</option>`
-                );
-            }
-            $('#editProductModal').modal('show');
-        },
-        error: function () {
-            alert('Failed to fetch product details.');
-        }
-    });
 });
 
 // $('#editProductForm').submit(function (e) {
@@ -401,13 +410,17 @@ $('#editProductForm').validate({
         };
         $.ajax({
             type: "POST",
-            url: "http://localhost:8080/inventoryManagementSystem_war/products/updateProduct",
+            url: "http://localhost:8080/inventoryManagementSystem_war/products/v1",
             contentType: "application/json",
             data: JSON.stringify(productData),
+            headers: {
+                email: sessionStorage.getItem('email'),
+                    token: sessionStorage.getItem("token")
+            },
             success: function (response) {
                 alert("Product updated successfully!");
                 $('#editProductModal').modal('hide');
-                table.ajax.reload();
+                productTableFunction()
                 form.reset();
             },
             error: function (xhr) {
@@ -426,8 +439,12 @@ $('#deleteProductBtn').click(function (){
     }
 
     $.ajax({
-        url: 'http://localhost:8080/inventoryManagementSystem_war/products/deleteProduct?productId=' + selectedId,
+        url: 'http://localhost:8080/inventoryManagementSystem_war/products/v1?productId=' + selectedId,
         method: 'DELETE',
+        headers: {
+            email: sessionStorage.getItem('email'),
+            token: sessionStorage.getItem("token")
+        },
         success: function (resp){
             alert("Product deleted successfully!");
         },
@@ -435,5 +452,42 @@ $('#deleteProductBtn').click(function (){
             alert("Error deleting product! Please try again");
         }
     });
-})
+});
+
+$('#viewProductBtn').click(function (){
+    const selectedId = $('input[name="productSelect"]:checked').val();
+    if (!selectedId) {
+        alert("Please select a product to view!");
+        return;
+    }
+    $.ajax({
+        url: 'http://localhost:8080/inventoryManagementSystem_war/products/getProduct?productId=' + selectedId,
+        method: 'GET',
+        headers: {
+            email: sessionStorage.getItem('email'),
+            Authorization: "Bearer " + sessionStorage.getItem("token")
+        },
+        success: function (resp) {
+            const product = resp.data; 
+
+            $('#pName').text(product.productName || '-');
+            $('#pCategory').text(product.category || '-');
+            $('#pPrice').text(product.price || '-');
+            $('#pQuantity').text(product.quantity || '-');
+            $('#pSupplierName').text(product.suppilerName || '-');
+            $('#pSupplierContact').text(product.contact || '-');
+            $('#pSupplierEmail').text(product.email || '-');
+            $('#pAddedDate').text(product.addedDate ? new Date(product.addedDate).toLocaleString() : '-');
+
+            $('#pErrorRecords').text(product.errorRecords?.length > 0 ? product.errorRecords.length : 'None');
+
+
+            $('#productDetailsModal').modal('show');
+        },
+        error: function (resp) {
+            alert("Error fetching product! Please try again");
+            console.error("Fetch failed:", resp);
+        }
+    });
+});
 

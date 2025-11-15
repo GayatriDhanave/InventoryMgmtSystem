@@ -1,12 +1,15 @@
 package com.ims.inventoryManagementSystem.service;
 
 import com.ims.inventoryManagementSystem.entity.*;
+import com.ims.inventoryManagementSystem.enums.UploadStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 public interface IService {
     UserData getUserByEmail (String email);
@@ -19,7 +22,7 @@ public interface IService {
 
     List<Products> getProducts ();
 
-    List<Products> getProductByNameAndSuppiler (String productName, Supplier supplier);
+    Products getProductByNameAndSuppiler (String productName, Supplier supplier);
 
     void addProduct (Products product);
 
@@ -52,4 +55,18 @@ public interface IService {
     int countProductsWithErrorRecords (Date startDate, Date endDate);
 
     int countProductsWithoutErrorRecords ();
+
+    List<Supplier> getAllSuppiler ();
+
+    long countSuppliers ();
+
+    void saveFile (FileUpload fileUpload);
+
+    Optional<FileUpload> findTopByEmailAndStatusNot (String email, String uploadStatus);
+
+    boolean existsByEmailAndStatusNot (String email, String uploadStatus);
+
+    FileUpload getFileByEmailAndStatusIn (String email, List<? extends Serializable> list);
+
+    List<FileUpload> getFileUploadHistory (String email);
 }

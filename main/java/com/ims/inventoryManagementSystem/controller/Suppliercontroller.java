@@ -17,54 +17,71 @@ public class Suppliercontroller {
     @Autowired
     private ISuppilerHandler suppilerHandler;
 
+
+    /**
+     *
+     * @param supplierName
+     * @param email
+     * @param sortBy
+     * @param order
+     * @param pageNum
+     * @param limit
+     * @return Map
+     */
     @GetMapping("/getAllSupplier")
     public ResponseEntity<Map<String, Object>> getAllSupplier (
             @RequestParam("name") String supplierName,
             @RequestParam("email") String email,
-            @RequestParam( defaultValue = "price") String sortBy,
+            @RequestParam(defaultValue = "price") String sortBy,
             @RequestParam(defaultValue = "-1") int order,
             @RequestParam(defaultValue = "1") int pageNum,
-            @RequestParam (defaultValue = "10")int limit
-    )
-    {
-        log.info("START :: CLASS :: ProductController :: METHOD :: getAllProducts");
-        ResponseEntity<Map<String, Object>> response = suppilerHandler.getAllSupplier(supplierName,email,sortBy,order,pageNum,limit);
-        log.info("END :: CLASS :: ProductController :: METHOD :: getAllProducts");
+            @RequestParam(defaultValue = "10") int limit
+    ) {
+        log.info("START :: CLASS :: Suppliercontroller :: METHOD :: getAllSupplier");
+        ResponseEntity<Map<String, Object>> response = suppilerHandler.getAllSupplier(supplierName, email, sortBy, order, pageNum, limit);
+        log.info("END :: CLASS :: Suppliercontroller :: METHOD :: getAllSupplier");
         return response;
     }
 
     @PostMapping("addSupplier")
-    public ResponseEntity<Map<String, Object>> addSupplier(@RequestBody Supplier suppiler) {
+    public ResponseEntity<Map<String, Object>> addSupplier (@RequestBody Supplier suppiler) {
         log.info("START :: CLASS :: Suppliercontroller :: METHOD :: addSupplier");
-        ResponseEntity<Map<String, Object>> response= suppilerHandler.addSupplier(suppiler);
+        ResponseEntity<Map<String, Object>> response = suppilerHandler.addSupplier(suppiler);
         log.info("END :: CLASS :: Suppliercontroller :: METHOD :: addSupplier");
-        return  response;
+        return response;
     }
 
     @PutMapping("updateSupplier")
-    public ResponseEntity<Map<String, Object>> updateSuppiler(@RequestBody Supplier suppiler) {
+    public ResponseEntity<Map<String, Object>> updateSuppiler (@RequestBody Supplier suppiler) {
         log.info("START :: CLASS :: Suppliercontroller :: METHOD :: updateSupplier");
-        ResponseEntity<Map<String, Object>> response= suppilerHandler.updateSupplier(suppiler);
+        ResponseEntity<Map<String, Object>> response = suppilerHandler.updateSupplier(suppiler);
         log.info("END :: CLASS :: Suppliercontroller :: METHOD :: updateSupplier");
-        return  response;
+        return response;
     }
 
     @DeleteMapping("/deleteSupplier")
-    public ResponseEntity<Map<String, Object>> deleteSupplier(@RequestParam int supplierId) {
+    public ResponseEntity<Map<String, Object>> deleteSupplier (@RequestParam int supplierId) {
         log.info("START :: CLASS :: Suppliercontroller :: METHOD :: deleteSupplier");
-        ResponseEntity<Map<String, Object>> response= suppilerHandler.deleteSupplier(supplierId);
+        ResponseEntity<Map<String, Object>> response = suppilerHandler.deleteSupplier(supplierId);
         log.info("END :: CLASS :: Suppliercontroller :: METHOD :: deleteSupplier");
-        return  response;
+        return response;
     }
 
     @GetMapping("/getSuppiler")
-    public ResponseEntity<Map<String, Object>> getById(
+    public ResponseEntity<Map<String, Object>> getById (
             @RequestParam("supplierId") int supplierId
-    )
-    {
-        log.info("START :: CLASS :: ProductController :: METHOD :: getAllProducts");
+    ) {
+        log.info("START :: CLASS :: Suppliercontroller :: METHOD :: getById");
         ResponseEntity<Map<String, Object>> response = suppilerHandler.getSupplierById(supplierId);
-        log.info("END :: CLASS :: ProductController :: METHOD :: getAllProducts");
+        log.info("END :: CLASS :: Suppliercontroller :: METHOD :: getById");
+        return response;
+    }
+
+    @GetMapping("/getAllSuppliers")
+    public ResponseEntity<Map<String, Object>> getAllSuppliers () {
+        log.info("START :: CLASS :: Suppliercontroller :: METHOD :: getAllSuppliers");
+        ResponseEntity<Map<String, Object>> response = suppilerHandler.getAllSuppliers();
+        log.info("END :: CLASS :: Suppliercontroller :: METHOD :: getAllSuppliers");
         return response;
     }
 }

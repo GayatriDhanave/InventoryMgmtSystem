@@ -50,7 +50,7 @@
         <h4>LOGIN</h4>
         <form id="loginForm">
             <div class="mb-3">
-                <input type="text" class="form-control" id="email" placeholder="Email" required>
+                <input type="email" class="form-control" id="email" placeholder="Email" required>
             </div>
             <div class="mb-3">
                 <input type="password" class="form-control" id="password" placeholder="Password" required>
@@ -58,7 +58,7 @@
             <div class="d-grid">
                 <button type="submit" class="btn btn-login">Login</button>
             </div>
-            <a href="#" class="register">Register</a>
+            <a href="register.html" class="register">Register</a>
         </form>
     </div>
 </div>
@@ -71,26 +71,43 @@
         $('#loginForm').on('submit', function(e) {
             e.preventDefault();
 
-            var email = $('#email').val().trim();
-            var password = $('#password').val().trim();
+            const email = $('#email').val().trim();
+            const password = $('#password').val().trim();
 
             if (email === '' || password === '') {
                 alert('Please enter email and password');
                 return;
             }
 
-                $.ajax({
-                url: `http://localhost:8080/inventoryManagementSystem_war/users/login`,
+            const loginData = {
+                email: email,
+                password: password
+            };
+
+            $.ajax({
+                url: 'http://localhost:8080/inventoryManagementSystem_war/auth/login',
                 method: 'POST',
-                // contentType: 'application/json',
-                data: { email: email, password: password },
+                contentType: 'application/json',
+                data: JSON.stringify(loginData),
+                // beforeSend: function(xhr) {
+                //     xhr.setRequestHeader("Authorization", "Bearer " + data.token);
+                // },
                 success: function(response) {
+                    // Store token in session
+                    sessionStorage.setItem("token", response.token);
                     sessionStorage.setItem("email", response.email);
-                    sessionStorage.setItem("sessionId", response.sessionId);
+
+                    // alert("Login successful!");
+                        // xhr.setRequestHeader("Authorization", "Bearer " + response.token);
                     window.location.href = 'dashboard.html';
+                    console.log(sessionStorage.getItem("token"));
                 },
-                error: function() {
-                    alert('Invalid email or password');
+                error: function(xhr) {
+                    if (xhr.status === 401) {
+                        alert('Invalid email or password');
+                    } else {
+                        alert('Login failed. Please try again.');
+                    }
                 }
             });
         });

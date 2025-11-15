@@ -10,7 +10,7 @@ public interface IProductHandler {
 
     ResponseEntity<Map<String, Object>> getAllProducts (String productName, String category, String supplier, String sortBy, int order, int pageNum, int limit);
 
-    ResponseEntity<Map<String, Object>> addProduct (Products product);
+    ResponseEntity<Map<String, Object>> addProduct (Products product, String email);
 
     ResponseEntity<Map<String, Object>> updateProduct (Products product);
 

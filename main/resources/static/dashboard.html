@@ -6,12 +6,13 @@
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
     <style>
 
         body {
-            background: #f7f8fa;
-            font-family: Inter, Arial, sans-serif;
+            background-color: #f8fbff;
+            font-family: 'Segoe UI', sans-serif;
         }
 
         .card-slim {
@@ -39,6 +40,37 @@
         .page {
             display: none;
         }
+
+        .card {
+            border-radius: 12px;
+            border: 1px solid #d7e3fc;
+            background-color: #fff;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
+        }
+        .nav-tabs .nav-link.active {
+            background-color: #007bff;
+            color: #fff;
+        }
+        .table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        .table th, .table td {
+            border: 1px solid #dee2e6;
+            padding: 8px;
+        }
+        .table th {
+            background-color: #e8f0fe;
+            color: #0a58ca;
+        }
+        .editable {
+            background-color: #fffaf0;
+            cursor: pointer;
+        }
+
     </style>
 </head>
 
@@ -66,10 +98,7 @@
 
         <div id="dashboardPage" class="col-9 card shadow-sm p-3 page">
             <h5>Welcome to Dashboard</h5>
-
         </div>
-
-
         <div id="products" class="col-9 card shadow-sm p-3 page">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h5>Products</h5>
@@ -80,26 +109,27 @@
                     <button class="btn btn-sm btn-outline-secondary" id="reloadProducts">Reload</button>
                 </div>
             </div>
-            <table id="productsTable" class="display" style="width:100%">
-                <thead>
+            <table id="productsTable" class="table table-striped table-bordered table-hover table-sm" style="width:100%">
+                <thead class="thead-primary">
                 <tr>
-                    <th>Select</th>
-                    <th>ID</th>
+                    <th></th>
+                    <th>Sr No</th>
                     <th>Name</th>
                     <th>Category</th>
                     <th>Supplier</th>
                     <th>Price</th>
                     <th>Quantity</th>
+                    <th>Action</th>
                 </tr>
                 </thead>
                 <tbody></tbody>
             </table>
-            <button id="editProductBtn" class="btn btn-primary">Edit Product</button>
-            <button id="deleteProductBtn" class="btn btn-primary">Delete Product</button>
-
+<!--            <button id="editProductBtn" class="btn btn-primary">Edit Product</button>-->
+            <button id="bulkDeleteProductBtn" class="btn btn-primary">Delete Product</button>
+<!--            <button id="viewProductBtn" class="btn btn-primary"> &lt;!&ndash;data-bs-target="productDetailsModal"&ndash;&gt;View Product-->
+<!--                Details-->
+            </button>
         </div>
-
-
         <div id="suppliers" class="col-9 card shadow-sm p-3 page">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h5>Suppliers</h5>
@@ -113,45 +143,83 @@
             <table id="suppliersTable" class="display" style="width:100%">
                 <thead>
                 <tr>
-                    <th>Select</th>
-                    <th>ID</th>
+                    <th></th>
+                    <th>Sr No.</th>
                     <th>Name</th>
                     <th>Contact</th>
                     <th>Email</th>
-
+                    <th>Actions</th>
                 </tr>
                 </thead>
                 <tbody></tbody>
             </table>
-            <button id="editSupplierBtn" class="btn btn-primary">Edit Supplier</button>
-            <button id="deleteSupplierBtn" class="btn btn-primary">Delete Supplier</button>
-
+<!--            <button id="editSupplierBtn" class="btn btn-primary">Edit Supplier</button>-->
+<!--            <button id="deleteSupplierBtn" class="btn btn-primary">Delete Supplier</button>-->
+<!--            <button id="viewSupplierBtn" class="btn btn-primary">View Supplier Details</button>-->
         </div>
-
 
         <div id="bulkUpload" class="col-9 card shadow-sm p-3 page">
             <h5>Bulk Upload</h5>
             <div class="container bg-light">
-                <h2>Click here to download Excel template</h2>
+                <p>Click here to download Excel template</p>
                 <button id="downloadBtn" class="btn btn-primary mt-3">Download</button>
             </div>
             <form id="bulkUploadForm" class="mt-3">
+
                 <div class="mb-3">
                     <label class="form-label">Upload Excel file</label>
                     <input class="form-control" type="file" id="bulkFile" accept=".xlsx">
                 </div>
                 <div class="mb-3">
-                    <button class="btn btn-primary" type="submit">Upload</button>
+                    <button class="btn btn-primary" type="submit" id="bulkUploadBtn">Upload</button>
+                </div>
+                <div id="msg"></div>
+                <div>
+                    <button class="btn btn-primary" type="button" id="errorFileBtn" style="display: inline">Download
+                        Error File
+                    </button>
+
                 </div>
             </form>
-            <div id="bulkResult" class="mt-3"></div>
+            <div id="bulkResult" class="mt-3">
+                <table id="fileUploadTable" class="display" style="width:100%">
+                    <thead>
+                    <tr>
+                        <th></th>
+                        <th>Sr No.</th>
+                        <th>File Name</th>
+                        <th>Upload Date</th>
+                        <th>Status</th>
+<!--                        <th>Actions</th>-->
+                    </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
         </div>
 
-        <div id="uploadResult" class="col-9 card shadow-sm p-3 page">
-            <h5>Upload Result</h5>
-            <div id="uploadResultContent" class="mt-3"></div>
+        <div id="uploadResultTabs" class="mt-4">
+            <ul class="nav nav-tabs" id="resultTabs" role="tablist">
+                <li class="nav-item">
+                    <a class="nav-link active" id="valid-tab" data-bs-toggle="tab" href="#validRecords" role="tab">Valid Records</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="invalid-tab" data-bs-toggle="tab" href="#invalidRecords" role="tab">Invalid Records</a>
+                </li>
+            </ul>
+            <div class="tab-content mt-3">
+                <div class="tab-pane fade show active" id="validRecords" role="tabpanel">
+                    <table id="validRecordsTable" class="display"></table>
+                </div>
+                <div class="tab-pane fade" id="invalidRecords" role="tabpanel">
+                    <table id="invalidRecordsTable" class="display"></table>
+                </div>
+            </div>
         </div>
+
+
     </div>
+
 </section>
 
 <div class="modal fade" id="addProductModal" tabindex="-1">
@@ -169,7 +237,7 @@
                         <label for="productCategory">Product Category</label>
                         <select class="form-control" id="productCategory" , name="productCategory">
                             <option value="">Select one option</option>
-<!--                            <option value="Electronics">Electronics</option>-->
+                            <!--                            <option value="Electronics">Electronics</option>-->
                         </select>
                     </div>
                     <div class="mb-4"><input type="number" class="form-control" name="price" id="price"
@@ -180,13 +248,15 @@
                         <label for="supplierDropdown">Supplier</label>
                         <select class="form-control" id="supplierDropdown" , name="supplierDropdown">
                             <option value="">Select one option</option>
-<!--                            <option value="1">Trader</option>-->
+                            <!--                            <option value="1">Trader</option>-->
                         </select>
                     </div>
 
                 </div>
                 <div class="modal-footer">
                     <button type="submit" class="btn btn-primary" id="submitBtn">Save</button>
+                    <button type="reset" class="btn btn-secondary" data-bs-dismiss="modal">Clear</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
             </form>
         </div>
@@ -211,6 +281,8 @@
                 </div>
                 <div class="modal-footer">
                     <button type="submit" class="btn btn-primary">Save</button>
+                    <button type="reset" class="btn btn-secondary" data-bs-dismiss="modal">Clear</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
             </form>
         </div>
@@ -242,7 +314,8 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Quantity</label>
-                        <input type="number" class="form-control" id="editProductQauntity" name="editProductQauntity" required>
+                        <input type="number" class="form-control" id="editProductQauntity" name="editProductQauntity"
+                               required>
                     </div>
                     <div class="mb-3">
                         <label for="supplierDropdown">Supplier</label>
@@ -293,16 +366,108 @@
     </div>
 </div>
 
+<div class="modal fade" id="productDetailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">Product Details</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <table class="table table-borderless">
+                    <h3>Product Details:</h3>
+                    <tr>
+                        <th>Product Name:</th>
+                        <td id="pName"></td>
+                    </tr>
+                    <tr>
+                        <th>Category:</th>
+                        <td id="pCategory"></td>
+                    </tr>
+                    <tr>
+                        <th>Price:</th>
+                        <td id="pPrice"></td>
+                    </tr>
+                    <tr>
+                        <th>Quantity:</th>
+                        <td id="pQuantity"></td>
+                    </tr>
+                    <tr>
+                        <th>Added Date:</th>
+                        <td id="pAddedDate"></td>
+                    </tr>
+                    <tr>
+                        <th>Supplier Name:</th>
+                        <td id="pSupplierName"></td>
+                    </tr>
+                    <tr>
+                        <th>Supplier Contact:</th>
+                        <td id="pSupplierContact"></td>
+                    </tr>
+                    <tr>
+                        <th>Supplier Email:</th>
+                        <td id="pSupplierEmail"></td>
+                    </tr>
+                    <tr>
+                        <th>Error Records:</th>
+                        <td id="pErrorRecords"></td>
+                    </tr>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="modal fade" id="supplierDetailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">Product Details</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <table class="table table-borderless">
+                    <h3>Product Details:</h3>
+                    <tr>
+                        <th>Suppiler ID:</th>
+                        <td id="sId"></td>
+                    </tr>
+                    <tr>
+                        <th>Suppiler Name:</th>
+                        <td id="sName"></td>
+                    </tr>
+                    <tr>
+                        <th>Supplier Contact:</th>
+                        <td id="sContact"></td>
+                    </tr>
+                    <tr>
+                        <th>Supplier Email:</th>
+                        <td id="sEmail"></td>
+                    </tr>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.19.5/dist/jquery.validate.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-<script src="products.js"></script>
-<script src="suppiler.js"></script>
-<script src="bulkUpload.js"></script>
 
+<script src="js/products.js"></script>
+<script src="js/suppiler.js"></script>
+<script src="js/bulkUpload.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/dashboard.js"></script>
 
 
 </body>

@@ -4,7 +4,7 @@ import lombok.Getter;
 
 @Getter
 public enum Regex {
-    NAME("^[a-zA-Z\\s]{1,64}$"),
+    NAME("^[a-zA-Z0-9\\s]{1,64}$"),
 //    EMAIL("^[a-zA-Z0-9+_.-]+@[a-zA-Z0-9.-]+$"),
     NUMBER("[0-9]{1,20}");
 //    PAN("^[A-Z]{5}[0-9]{4}[A-Z]$"),

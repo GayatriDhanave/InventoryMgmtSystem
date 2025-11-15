@@ -1,9 +1,11 @@
 package com.ims.inventoryManagementSystem.handler;
 
+import com.ims.inventoryManagementSystem.dto.ProductDetailsDto;
 import com.ims.inventoryManagementSystem.dto.ProductDto;
 import com.ims.inventoryManagementSystem.dto.ResponseDto;
 import com.ims.inventoryManagementSystem.entity.Category;
 import com.ims.inventoryManagementSystem.entity.Products;
+import com.ims.inventoryManagementSystem.entity.UserData;
 import com.ims.inventoryManagementSystem.response.ResponseHandler;
 import com.ims.inventoryManagementSystem.service.IService;
 import jakarta.persistence.criteria.Predicate;
@@ -27,6 +29,10 @@ public class ProductHandler implements  IProductHandler {
     @Autowired
     private IService service;
 
+    /**
+     *
+     * @return Map
+     */
     @Override
     public ResponseEntity<Map<String, Object>> getCategories () {
         log.info("START :: CLASS :: ProductHandler :: METHOD :: getCategories");
@@ -37,6 +43,17 @@ public class ProductHandler implements  IProductHandler {
         return new  ResponseEntity<>(ResponseHandler.success(categoryList), HttpStatus.OK);
     }
 
+    /**
+     *
+     * @param productName
+     * @param category
+     * @param supplier
+     * @param sortBy
+     * @param order
+     * @param pageNum
+     * @param limit
+     * @return Map
+     */
     @Override
     public ResponseEntity<Map<String, Object>> getAllProducts (String productName, String category, String supplier, String sortBy, int order, int pageNum, int limit) {
         log.info("START :: CLASS :: ProductHandler :: METHOD :: getAllProducts");
@@ -73,6 +90,13 @@ public class ProductHandler implements  IProductHandler {
 
     }
 
+    /**
+     *
+     * @param productName
+     * @param category
+     * @param supplier
+     * @return Map
+     */
     private Specification<Products> withFilter (String productName, String category, String supplier) {
 
         return ((root, query, criteriaBuilder) -> {
@@ -91,33 +115,62 @@ public class ProductHandler implements  IProductHandler {
 
     }
 
+    /**
+     *
+     * @param product
+     * @param email
+     * @return Map
+     */
     @Override
-    public ResponseEntity<Map<String, Object>> addProduct (Products product) {
-        log.info("START :: CLASS :: ProductHandler :: METHOD :: addProduct :: PRODUCT_NAME :: {}", product.getProductName());
+    public ResponseEntity<Map<String, Object>> addProduct (Products product, String email) {
+        log.info("START :: CLASS :: ProductHandler :: METHOD :: addProduct :: PRODUCT_NAME :: {}",
+                product.getProductName());
         try{
-            List<Products> productList=service.getProductByNameAndSuppiler(product.getProductName(), product.getSupplier());
-            if(productList.isEmpty()){
+            Products existingProduct=service.getProductByNameAndSuppiler(product.getProductName(),
+                    product.getSupplier());
+            UserData addedBy=service.getUserByEmail(email);
+            if(existingProduct==null){
                 product.setAddedDate(new Date());
+                product.setAddedBy(addedBy);
                service.addProduct(product);
             }
             else{
-                return   new ResponseEntity<>(ResponseHandler.success("Product Already exists"),HttpStatus.OK);
+                existingProduct.setProductName(product.getProductName());
+                existingProduct.setPrice(product.getPrice());
+                existingProduct.setQuantity(product.getQuantity());
+                existingProduct.setSupplier(product.getSupplier());
+                existingProduct.setCategory(product.getCategory());
+                existingProduct.setAddedBy(product.getAddedBy());
+                service.addProduct(existingProduct);
             }
         } catch (Exception e){
-            return   new ResponseEntity<>(ResponseHandler.error("Couldn't add product"),HttpStatus.INTERNAL_SERVER_ERROR);
+            return   new ResponseEntity<>(ResponseHandler.error("Couldn't add product"),
+                    HttpStatus.INTERNAL_SERVER_ERROR);
         }
         return null;
     }
 
+    /**
+     *
+     * @param product
+     * @return Map
+     */
     @Override
     public ResponseEntity<Map<String, Object>> updateProduct (Products product) {
-        log.info("START :: CLASS :: ProductHandler :: METHOD :: updateProduct :: PRODUCT_NAME :: {}", product.getProductName());
+        log.info("START :: CLASS :: ProductHandler :: METHOD :: updateProduct :: PRODUCT_NAME :: {}",
+                product.getProductName());
         service.updateProduct(product);
-        log.info("END :: CLASS :: ProductHandler :: METHOD :: updateProduct :: PRODUCT_NAME :: {}", product.getProductName());
+        log.info("END :: CLASS :: ProductHandler :: METHOD :: updateProduct :: PRODUCT_NAME :: {}",
+                product.getProductName());
 
         return new ResponseEntity<>(ResponseHandler.success("Product updated successfully"),HttpStatus.OK);
     }
 
+    /**
+     *
+     * @param productId
+     * @return Map
+     */
     @Override
     public ResponseEntity<Map<String, Object>> deleteProduct (int productId) {
         log.info("START :: CLASS :: ProductHandler :: METHOD :: deleteProduct :: PRODUCT_ID :: {}", productId);
@@ -126,13 +179,31 @@ public class ProductHandler implements  IProductHandler {
         return new ResponseEntity<>(ResponseHandler.success("Product deleted successfully"),HttpStatus.OK);
     }
 
+    /**
+     *
+     * @param productId
+     * @return Map
+     */
     @Override
     public ResponseEntity<Map<String, Object>> getProductById (int productId) {
         log.info("START :: CLASS :: ProductHandler :: METHOD :: getProductById :: PRODUCT_ID :: {}", productId);
         Products products=service.getProductById(productId);
         if(products!=null){
             log.info("END :: CLASS :: ProductHandler :: METHOD :: getProductById :: PRODUCT_ID :: {}", productId);
-            return new ResponseEntity<>(ResponseHandler.success(products),HttpStatus.OK);
+            ProductDetailsDto productDetailsDto=new ProductDetailsDto();
+            productDetailsDto.setId(productId);
+            productDetailsDto.setProductName(products.getProductName());
+            productDetailsDto.setCategoryId(products.getCategory().getId());
+            productDetailsDto.setCategory(products.getCategory().getCategoryName());
+            productDetailsDto.setQuantity(products.getQuantity());
+            productDetailsDto.setPrice(products.getPrice());
+            productDetailsDto.setSupId(products.getSupplier().getSupId());
+            productDetailsDto.setSuppilerName(products.getSupplier().getName());
+            productDetailsDto.setEmail(products.getSupplier().getEmail());
+            productDetailsDto.setContact(products.getSupplier().getContact());
+            productDetailsDto.setErrorRecords(products.getErrorRecords());
+            productDetailsDto.setAddedDate(products.getAddedDate());
+            return new ResponseEntity<>(ResponseHandler.success(productDetailsDto),HttpStatus.OK);
         }
         else {
             return    new ResponseEntity<>(ResponseHandler.success("No products found"),HttpStatus.OK);

@@ -15,4 +15,6 @@ public interface ISuppilerHandler {
     ResponseEntity<Map<String, Object>> deleteSupplier (int suppilerId);
 
     ResponseEntity<Map<String, Object>> getSupplierById(int suppilerId);
+
+    ResponseEntity<Map<String, Object>> getAllSuppliers ();
 }

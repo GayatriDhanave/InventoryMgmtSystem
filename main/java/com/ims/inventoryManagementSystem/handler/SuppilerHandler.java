@@ -77,11 +77,11 @@ public class SuppilerHandler implements  ISuppilerHandler {
 
     @Override
     public ResponseEntity<Map<String, Object>> addSupplier (Supplier suppiler) {
-        log.info("START :: CLASS :: SuppilerHandler :: METHOD :: getAllSupplier");
+        log.info("START :: CLASS :: SuppilerHandler :: METHOD :: addSupplier");
         try{
             service.addSuppilers(suppiler);
         } catch (Exception e) {
-            log.error("START :: CLASS :: SuppilerHandler :: METHOD :: getAllSupplier :: ERROR :: {}", e);
+            log.error("ERROR :: CLASS :: SuppilerHandler :: METHOD :: addSupplier :: ERROR :: {}", e);
             throw new RuntimeException(e);
         }
         return new ResponseEntity<>(ResponseHandler.success("Supplier added successfully!"), HttpStatus.OK);
@@ -90,26 +90,28 @@ public class SuppilerHandler implements  ISuppilerHandler {
 
     @Override
     public ResponseEntity<Map<String, Object>> updateSupplier (Supplier suppiler) {
-        log.info("START :: CLASS :: SuppilerHandler :: METHOD :: getAllSupplier");
+        log.info("START :: CLASS :: SuppilerHandler :: METHOD :: updateSupplier");
         try{
             service.updateSuppilers(suppiler);
         } catch (Exception e) {
-            log.error("START :: CLASS :: SuppilerHandler :: METHOD :: getAllSupplier :: ERROR :: {}", e);
+            log.error("ERROR :: CLASS :: SuppilerHandler :: METHOD :: updateSupplier :: ERROR :: {}", e);
             throw new RuntimeException(e);
         }
+        log.info("END :: CLASS :: SuppilerHandler :: METHOD :: updateSupplier");
         return new ResponseEntity<>(ResponseHandler.success("Supplier updated successfully!"), HttpStatus.OK);
 
     }
 
     @Override
     public ResponseEntity<Map<String, Object>> deleteSupplier (int suppilerId) {
-        log.info("START :: CLASS :: SuppilerHandler :: METHOD :: getAllSupplier");
+        log.info("START :: CLASS :: SuppilerHandler :: METHOD :: deleteSupplier");
         try{
             service.deleteSuppilers(suppilerId);
         } catch (Exception e) {
-            log.error("START :: CLASS :: SuppilerHandler :: METHOD :: getAllSupplier :: ERROR :: {}", e);
+            log.error("START :: CLASS :: SuppilerHandler :: METHOD :: deleteSupplier :: ERROR :: {}", e);
             throw new RuntimeException(e);
         }
+        log.info("END :: CLASS :: SuppilerHandler :: METHOD :: deleteSupplier");
         return new ResponseEntity<>(ResponseHandler.success("Supplier deleted successfully!"), HttpStatus.OK);
 
     }
@@ -117,13 +119,41 @@ public class SuppilerHandler implements  ISuppilerHandler {
     @Override
     public ResponseEntity<Map<String, Object>> getSupplierById (int suppilerId) {
         log.info("START :: CLASS :: SupplierHandler :: METHOD :: getSupplierById :: SUPPLIER_ID :: {}", suppilerId);
-        Supplier supplier=service.getSupplierById(suppilerId);
-        if(supplier!=null){
-            log.info("END :: CLASS :: ProductHandler :: METHOD :: getProductById :: PRODUCT_ID :: {}", suppilerId);
-            return new ResponseEntity<>(ResponseHandler.success(supplier),HttpStatus.OK);
+        try{
+            Supplier supplier=service.getSupplierById(suppilerId);
+            if(supplier!=null){
+                log.info("END :: CLASS :: ProductHandler :: METHOD :: getSupplierById :: SUPPLIER_ID :: {}", suppilerId);
+                return new ResponseEntity<>(ResponseHandler.success(supplier),HttpStatus.OK);
+            }
+            else {
+                log.error("ERROR :: CLASS :: ProductHandler :: METHOD :: getSupplierById :: SUPPLIER_ID :: {}", suppilerId);
+                return new ResponseEntity<>(ResponseHandler.success("No supplier found"),HttpStatus.OK);
+            }
+        } catch (Exception e) {
+            log.error("ERROR :: CLASS :: ProductHandler :: METHOD :: getSupplierById :: SUPPLIER_ID :: {} :: {}", suppilerId, e);
+            throw new RuntimeException(e);
         }
-        else {
-            return    new ResponseEntity<>(ResponseHandler.success("No supplier found"),HttpStatus.OK);
+    }
+
+    @Override
+    public ResponseEntity<Map<String, Object>> getAllSuppliers () {
+        log.info("START :: CLASS :: SuppilerHandler :: METHOD :: getAllSuppliers");
+
+        try{
+            List<Supplier> supplierList=service.getAllSuppiler();
+            if(!supplierList.isEmpty()){
+                ResponseDto<Supplier> responseDto=new ResponseDto<>();
+                responseDto.setFilteredRecords(supplierList.size());
+                responseDto.setTotalRecords(service.countSuppliers());
+                responseDto.setData(supplierList);
+                log.info("END :: CLASS :: SuppilerHandler :: METHOD :: getAllSuppliers");
+                return new ResponseEntity<>(ResponseHandler.success(responseDto), HttpStatus.OK);
+            }
+        } catch (Exception e) {
+            log.error("ERROR :: CLASS :: SuppilerHandler :: METHOD :: getAllSuppliers :: {}", e);
+            throw new RuntimeException(e);
         }
+        log.info("END :: CLASS :: SuppilerHandler :: METHOD :: getAllSuppliers");
+        return new ResponseEntity<>(ResponseHandler.success("No suppliers found"),HttpStatus.OK);
     }
 }

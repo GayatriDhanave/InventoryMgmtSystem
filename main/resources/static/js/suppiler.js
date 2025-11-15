@@ -77,7 +77,9 @@ function supplierAjax() {
         data: filters,
         headers: {
             email: sessionStorage.getItem('email'),
-            sessionId: sessionStorage.getItem('sessionId')
+            // sessionId: sessionStorage.getItem('sessionId'),
+            token: sessionStorage.getItem("token")
+
         },
         dataType: 'json',
         success: function (resp) {
@@ -91,10 +93,10 @@ function supplierAjax() {
 
             const result = {
                 data: inner.data || [],
-                recordsTotal: inner.totalRecords || 0, // ✅ correct totals
+                recordsTotal: inner.totalRecords || 0,
                 recordsFiltered: inner.filteredRecords || 0
             };
-            deferred.resolve(result); // ✅ one object, not multiple args
+            deferred.resolve(result);
         },
         error: function (xhr) {
             if (xhr.status === 401) {
@@ -115,10 +117,10 @@ function supplierTableFunction() {
     $('#suppliersTable').DataTable({
         serverSide: true,
         processing: false,
-        ajax: function (data, callback, settings) { // ✅ correct param names
+        ajax: function (data, callback, settings) {
             supplierAjax()
                 .done(function (response) {
-                    callback(response); // ✅ correct callback
+                    callback(response);
                 })
                 .fail(function (err) {
                     console.error("Ajax error:", err);
@@ -137,6 +139,16 @@ function supplierTableFunction() {
             {data: 'name'},
             {data: 'contact'},
             {data: 'email'},
+            {"data": null,
+                "defaultContent": '<i class="fas fa-edit edit-icon"></i> <i class="fas fa-trash-alt delete-icon"></i> <i class="fa-solid fa-circle-info"></i>',
+                "render": function (data, type, row) {
+
+                    let icons = '<button id="editSupplierBtn" onclick="editProduct(${"#row.productId"})"> <i class="fas fa-edit edit-icon" data-id="' + row.id + '"></i> </button>';
+                    icons += '<button id="deleteSupplierBtn"> <i class="fas fa-trash-alt delete-icon" data-id="' + row.id + '"></i> </button>';
+                    icons += '<button id="viewSupplierBtn"> <i class="fa-solid fa-circle-info" data-id="' + row.id + '"></i> </button>';
+                    return icons;},
+                orderable: false
+            }
 
         ]
     });
@@ -166,24 +178,6 @@ $('#editSupplierBtn').click(function () {
         }
     });
 });
-
-// $('#editSupplierForm').submit(function (e) {
-//     e.preventDefault();
-//     const formData = $(this).serialize();
-//     $.ajax({
-//         url: '/api/suppliers/update',
-//         method: 'POST',
-//         data: formData,
-//         success: function () {
-//             $('#editSupplierModal').modal('hide');
-//             alert('Supplier updated successfully!');
-//             location.reload();
-//         },
-//         error: function () {
-//             alert('Error updating supplier.');
-//         }
-//     });
-// });
 
 $.validator.addMethod("pattern", function (value, element, param) {
     if (this.optional(element)) {
@@ -282,7 +276,6 @@ $('#editSupplierForm').validate({
             required: true,
             email: true
         },
-
     },
     messages: {
         supplierName: {
@@ -300,16 +293,13 @@ $('#editSupplierForm').validate({
             required: "Enter email",
             pattern: "Enter valid email"
         },
-
     },
     errorPlacement: function (error, element) {
         error.insertAfter(element);
     },
-
     highlight: function (element) {
         $(element).addClass("invalid-field").css("border", "2px solid red");
     },
-
     unhighlight: function (element) {
         $(element).removeClass("invalid-field").css("border", "");
     },
@@ -317,11 +307,8 @@ $('#editSupplierForm').validate({
         let supplierData = {
             supId:parseInt( $('#supplierId').val()),
             name: $('#supplierName').val(),
-            // category: {id: parseInt($('#editProductCategory').val())},
             contact: $('#supplierContact').val(),
             email: $('#supplierEmail').val()
-            // productList:[]
-            // supplier: {supId: parseInt($('#editSupplierDropdown').val())}
 
         };
         $.ajax({
@@ -360,4 +347,38 @@ $('#deleteSupplierBtn').click(function (){
             alert("Error deleting supplier! Please try again.");
         }
     });
-})
+});
+
+
+
+$('#viewSupplierBtn').click(function () {
+    const selectedId = $('input[name="supplierSelect"]:checked').val();
+    if (!selectedId) {
+        alert("Please select a supplier to view!");
+        return;
+    }
+
+    $.ajax({
+        url: 'http://localhost:8080/inventoryManagementSystem_war/supplier/getSuppiler?supplierId=' + selectedId,
+        method: 'GET',
+        headers: {
+            email: sessionStorage.getItem('email'),
+            Authorization: "Bearer " + sessionStorage.getItem("token")
+        },
+        success: function (resp) {
+            const supplier = resp.data;
+
+            // Populate supplier details in modal
+            $('#sId').text(supplier.supId || '-');
+            $('#sName').text(supplier.name || '-');
+            $('#sEmail').text(supplier.email || '-');
+            $('#sContact').text(supplier.contact || '-');
+
+            $('#supplierDetailsModal').modal('show');
+        },
+        error: function (resp) {
+            alert("Error fetching supplier! Please try again.");
+            console.error("Fetch supplier failed:", resp);
+        }
+    });
+});

@@ -1,10 +1,15 @@
 package com.ims.inventoryManagementSystem.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.ToString;
 
-@Data
+
 @Entity
+@Data
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class ErrorRecords {
 
     @Id
@@ -12,10 +17,12 @@ public class ErrorRecords {
     private int errorId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id")
+    @JoinColumn(name = "product_id")
+    @JsonBackReference(value = "product-error") // Break recursion
+    @ToString.Exclude
     private Products product;
 
     private String errorField;
 
-    private  String errorMessage;
+    private String errorMessage;
 }
