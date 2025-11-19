@@ -1,7 +1,6 @@
 $(document).ready(function () {
     productTableFunction();
 
-
 });
 function getAllCategories(){
     $.ajax({
@@ -69,6 +68,7 @@ function getAllSuppliers(){
 }
 
 function editProduct(selectedId){
+
     $.ajax({
         url: 'http://localhost:8080/inventoryManagementSystem_war/products/v1/getProduct?productId=' + selectedId,
         method: 'GET',
@@ -79,33 +79,31 @@ function editProduct(selectedId){
         success: function (resp) {
             const product = resp.data;
             $('#productId').val(product.id);
-            $('#productName').val(product.productName);
-            // $('#editProductCategory').val(product.category.categoryName);
-            const categoryDropdown = $('#productCategory');
+            $('#editProductName').val(product.productName);
+            // $('#editProductCategory').val(product.category);
+            const categoryDropdown = $('#editProductCategory');
             categoryDropdown.empty();
-            categoryDropdown.append('<option value="">Select one option</option>');
 
-            if (product.supplierName!==null) {
+            if (product.category!==null) {
                 categoryDropdown.append(
                     `<option value="${product.categoryId}" selected>${product.category}</option>`
                 );
             }
-            $('#price').val(product.price);
-            $('#quantity').val(product.quantity);
-            // $('#editSupplierDropdown').val(product.supplier.name);
-            const supplierDropdown = $('#supplierDropdown');
+            $('#productPrice').val(product.price);
+            $('#editProductQauntity').val(product.quantity);
+            const supplierDropdown = $('#editSupplierDropdown');
             supplierDropdown.empty();
-            supplierDropdown.append('<option value="">Select one option</option>');
 
             if (product.suppilerName!==null) {
                 supplierDropdown.append(
                     `<option value="${product.supId}" selected>${product.suppilerName}</option>`
                 );
             }
-            $('#addProductModal').modal('show');
+            $('#editProductModal').modal('show');
         },
         error: function () {
-            alert('Failed to fetch product details.');
+            // alert('Failed to fetch product details.');
+            showToast("Failed to fetch product details!", "error");
         }
     });
 }
@@ -205,13 +203,15 @@ $('#addProductForm').validate({
                     token: sessionStorage.getItem("token")
             },
             success: function (response) {
-                alert("Product added successfully!");
+                // alert("Product added successfully!");
+                showToast("Products added successfully!", "success");
                 $('#addProductModal').modal('hide');
                 productTableFunction()
                 form.reset();
             },
             error: function (xhr) {
-                alert("Error adding supplier: " + xhr.responseText);
+                // alert("Error adding supplier: " + xhr.responseText);
+                showToast("Error adding supplier!", "error");
             }
         });
     }
@@ -255,9 +255,10 @@ function productAjax() {
         },
         error: function (xhr) {
             if (xhr.status === 401) {
-                alert("Session expired. Please login again.");
+                // alert("Session expired. Please login again.");
+                showToast("Seesion expierd please login again!", "error");
                 sessionStorage.clear();
-                window.location.href = "login.html";
+                window.location.href = "index.html";
             } else {
                 console.error("Error:", xhr.responseText);
                 deferred.reject(xhr);
@@ -269,6 +270,9 @@ function productAjax() {
 }
 
 function productTableFunction() {
+    if ($.fn.DataTable.isDataTable('#productsTable')) {
+        $('#productsTable').DataTable().destroy();
+    }
     $('#productsTable').DataTable({
         serverSide: true,
         processing: true,
@@ -291,29 +295,25 @@ function productTableFunction() {
         },
         orderable: false
     },
-            { data: 'productId' },
-            { data: 'productName' },
-            { data: 'category' },
-            { data: 'suppiler' },
-            { data: 'price' },
-            { data: 'quantity' },
-            {"data": null,
-                "defaultContent": '<i class="fas fa-edit edit-icon"></i> <i class="fas fa-trash-alt delete-icon"></i> <i class="fa-solid fa-circle-info"></i>',
-                "render": function (data, type, row) {
-
-                    let icons = '<button id="editProductBtn" onclick="editProduct(${"#row.productId"})"> <i class="fas fa-edit edit-icon" data-id="' + row.id + '"></i> </button>';
-                    icons += '<button id="deleteProductBtn"> <i class="fas fa-trash-alt delete-icon" data-id="' + row.id + '"></i> </button>';
-                    icons += '<button id="viewProductBtn"> <i class="fa-solid fa-circle-info" data-id="' + row.id + '"></i> </button>';
-                    return icons;}
-            }
+            { data: null , orderable: false},
+            { data: 'productName', orderable: false },
+            { data: 'category' , orderable: false},
+            { data: 'suppiler', orderable: false },
+            { data: 'price', orderable: false },
+            { data: 'quantity' , orderable: false},
+            { data: null,
+                render: (d, t, row) =>
+                    `<i class="fas fa-edit edit-icon" onclick="editProduct('${row.productId}')"></i> <i class="fa-solid fa-circle-info" onclick="viewProduct('${row.productId}')"></i>  <i class="fas fa-trash-alt delete-icon" onclick="deleteProduct('${row.productId}')"></i>`, orderable: false}
         ]
     });
+    applySerialNumber('#productsTable', 1);
 }
 
 $('#editProductBtn').click(function () {
     const selectedId = $('input[name="productSelect"]:checked').val();
     if (!selectedId) {
-        alert("Please select a product to edit!");
+        // alert("Please select a product to edit!");
+        showToast("Please select a product to edit!", "warning");
         return;
     }
     editProduct();
@@ -321,24 +321,6 @@ $('#editProductBtn').click(function () {
 
 });
 
-// $('#editProductForm').submit(function (e) {
-//     e.preventDefault();
-//     const formData = $(this).serialize();
-//     $.ajax({
-//         url: 'http://localhost:8080/inventoryManagementSystem_war/products/update',
-//         method: 'POST',
-//         data: formData,
-//         success: function () {
-//             $('#editProductModal').modal('hide');
-//             alert('Product updated successfully!');
-//             location.reload(); // Refresh table
-//         },
-//         error: function () {
-//             alert('Error updating product.');
-//         }
-//     });
-// });
-//
 
 $('#editProductForm').validate({
     rules: {
@@ -408,6 +390,9 @@ $('#editProductForm').validate({
             supplier: {supId: parseInt($('#editSupplierDropdown').val())}
 
         };
+        if (!confirm("Are you sure you want to edit selected product?")) {
+            return;
+        }
         $.ajax({
             type: "POST",
             url: "http://localhost:8080/inventoryManagementSystem_war/products/v1",
@@ -418,76 +403,153 @@ $('#editProductForm').validate({
                     token: sessionStorage.getItem("token")
             },
             success: function (response) {
-                alert("Product updated successfully!");
+                // alert("Product updated successfully!");
+                showToast("Products update successfully!", "success");
                 $('#editProductModal').modal('hide');
                 productTableFunction()
                 form.reset();
             },
             error: function (xhr) {
-                alert("Error adding supplier: " + xhr.responseText);
+                // alert("Error adding supplier: " + xhr.responseText);
+                showToast("Error adding product!", "error");
             }
         });
     }
 });
 
-$('#deleteProductBtn').click(function (){
-
-    const selectedId = $('input[name="productSelect"]:checked').val();
-    if (!selectedId) {
-        alert("Please select a product to delete!");
+ function deleteProduct(selectedId){
+    if (!confirm("Are you sure you want to delete selected products?")) {
         return;
     }
 
-    $.ajax({
-        url: 'http://localhost:8080/inventoryManagementSystem_war/products/v1?productId=' + selectedId,
-        method: 'DELETE',
-        headers: {
-            email: sessionStorage.getItem('email'),
-            token: sessionStorage.getItem("token")
-        },
-        success: function (resp){
-            alert("Product deleted successfully!");
-        },
-        error:function (resp){
-            alert("Error deleting product! Please try again");
-        }
-    });
-});
+        $.ajax({
+            url: 'http://localhost:8080/inventoryManagementSystem_war/products/v1/getProduct?productId=' + selectedId,
+            method: 'DELETE',
+            headers: {
+                email: sessionStorage.getItem('email'),
+                token: sessionStorage.getItem("token")
+            },
+            success: function (resp){
+                // alert("Product deleted successfully!");
+                showToast("Products deleted successfully!", "success");
 
-$('#viewProductBtn').click(function (){
-    const selectedId = $('input[name="productSelect"]:checked').val();
-    if (!selectedId) {
-        alert("Please select a product to view!");
-        return;
+            },
+            error:function (resp){
+                // alert("Error deleting product! Please try again");
+                showToast("Error deleting product!", "error");
+            }
+        });
+
+}
+ function viewProduct(selectedId){
+        $.ajax({
+            url: 'http://localhost:8080/inventoryManagementSystem_war/products/v1/getProduct?productId=' + selectedId,
+            method: 'GET',
+            headers: {
+                email: sessionStorage.getItem('email'),
+                Authorization: "Bearer " + sessionStorage.getItem("token")
+            },
+            success: function (resp) {
+                const product = resp.data;
+
+                $('#pName').text(product.productName || '-');
+                $('#pCategory').text(product.category || '-');
+                $('#pPrice').text(product.price || '-');
+                $('#pQuantity').text(product.quantity || '-');
+                $('#pSupplierName').text(product.suppilerName || '-');
+                $('#pSupplierContact').text(product.contact || '-');
+                $('#pSupplierEmail').text(product.email || '-');
+                $('#pAddedDate').text(product.addedDate ? new Date(product.addedDate).toLocaleString() : '-');
+
+                $('#pErrorRecords').text(product.errorRecords?.length > 0 ? product.errorRecords.length : 'None');
+
+
+                $('#productDetailsModal').modal('show');
+            },
+            error: function (resp) {
+                showToast("Error fetching products!", "error");
+                console.error("Fetch failed:", resp);
+            }
+        });
+
+}
+
+    $('#bulkDeleteProductBtn').off('click').on('click', function () {
+
+        const selectedIds = $('input[name="productSelect"]:checked')
+            .map(function () { return $(this).val(); })
+            .get();
+
+        if (selectedIds.length === 0) {
+            // alert("Please select at least one product to delete!");
+            showToast("Select a product!", "warning");
+
+            return;
+        }
+
+        if (!confirm("Are you sure you want to delete selected products?")) {
+            return;
+        }
+
+        $.ajax({
+            url: 'http://localhost:8080/inventoryManagementSystem_war/products/v1/bulkDeleteProduct?ids='
+                + selectedIds.join(','),
+            method: 'DELETE',
+            headers: {
+                email: sessionStorage.getItem('email'),
+                token: sessionStorage.getItem("token")
+            },
+            success: function (resp) {
+                // alert("Selected products deleted successfully!");
+                showToast("Products deleted successfully!", "success");
+                productTableFunction();  // reload your table if needed
+            },
+            error: function () {
+                // alert("Error deleting products! Please try again");
+                showToast("Error in deleting product!", "error");
+            }
+        });
+    });
+
+function showToast(message, type = "success") {
+    const container = document.getElementById("toastContainer");
+
+    const toast = document.createElement("div");
+    toast.classList.add("toastBox");
+
+    if (type === "error") {
+        toast.classList.add("toast-error");
+    } else if(type=="warning"){
+        toast.classList.add("toast-warning");
     }
-    $.ajax({
-        url: 'http://localhost:8080/inventoryManagementSystem_war/products/getProduct?productId=' + selectedId,
-        method: 'GET',
-        headers: {
-            email: sessionStorage.getItem('email'),
-            Authorization: "Bearer " + sessionStorage.getItem("token")
-        },
-        success: function (resp) {
-            const product = resp.data; 
+    else {
+        toast.classList.add("toast-success");
+    }
 
-            $('#pName').text(product.productName || '-');
-            $('#pCategory').text(product.category || '-');
-            $('#pPrice').text(product.price || '-');
-            $('#pQuantity').text(product.quantity || '-');
-            $('#pSupplierName').text(product.suppilerName || '-');
-            $('#pSupplierContact').text(product.contact || '-');
-            $('#pSupplierEmail').text(product.email || '-');
-            $('#pAddedDate').text(product.addedDate ? new Date(product.addedDate).toLocaleString() : '-');
+    toast.innerText = message;
 
-            $('#pErrorRecords').text(product.errorRecords?.length > 0 ? product.errorRecords.length : 'None');
+    container.appendChild(toast);
+
+    setTimeout(() => {
+        toast.classList.add("toast-show");
+    }, 100);
 
 
-            $('#productDetailsModal').modal('show');
-        },
-        error: function (resp) {
-            alert("Error fetching product! Please try again");
-            console.error("Fetch failed:", resp);
-        }
+    setTimeout(() => {
+        toast.classList.remove("toast-show");
+        setTimeout(() => toast.remove(), 400);
+    }, 5000);
+}
+
+function applySerialNumber(tableId, columnIndex = 0) {
+    const table = $(tableId).DataTable();
+
+    table.on('draw.dt', function () {
+        let pageInfo = table.page.info();
+        table.column(columnIndex, { search: 'applied', order: 'applied' })
+            .nodes()
+            .each(function (cell, i) {
+                cell.innerHTML = pageInfo.start + i + 1;
+            });
     });
-});
-
+}

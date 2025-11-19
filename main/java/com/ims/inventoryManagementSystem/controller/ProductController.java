@@ -1,12 +1,19 @@
 package com.ims.inventoryManagementSystem.controller;
 
 import com.ims.inventoryManagementSystem.entity.Products;
+import com.ims.inventoryManagementSystem.exception.IMSException;
 import com.ims.inventoryManagementSystem.handler.IProductHandler;
+import com.ims.inventoryManagementSystem.response.ResponseCode;
+import com.ims.inventoryManagementSystem.response.ResponseMessage;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -46,15 +53,15 @@ public class ProductController {
             @RequestParam("productName") String productName,
             @RequestParam("category") String category,
             @RequestParam("supplier") String supplier,
-//            @RequestParam("price") String country,
             @RequestParam(defaultValue = "price") String sortBy,
             @RequestParam(defaultValue = "-1") int order,
             @RequestParam(defaultValue = "1") int pageNum,
-            @RequestParam(defaultValue = "10") int limit
+            @RequestParam(defaultValue = "10") int limit,
+            @RequestHeader("email") String email
     ) {
         log.info("START :: CLASS :: ProductController :: METHOD :: getAllProducts");
         ResponseEntity<Map<String, Object>> response = productHandler.getAllProducts(productName, category, supplier,
-                sortBy, order, pageNum, limit);
+                sortBy, order, pageNum, limit, email);
         log.info("END :: CLASS :: ProductController :: METHOD :: getAllProducts");
         return response;
     }
@@ -113,4 +120,49 @@ public class ProductController {
         log.info("END :: CLASS :: ProductController :: METHOD :: getProductById");
         return response;
     }
+
+    @GetMapping("/v1/getProductWithErrors")
+    public ResponseEntity<Map<String, Object>> getProductWithErrors (@RequestHeader(value = "email", required = true) String email) {
+        log.info("START :: CLASS :: ProductController :: METHOD :: getProductWithErrors");
+        ResponseEntity<Map<String, Object>> response = productHandler.getProductWithErrors(email);
+        log.info("END :: CLASS :: ProductController :: METHOD :: getProductWithErrors");
+        return response;
+    }
+
+    @GetMapping("/v1/getProductWithoutErrors")
+    public ResponseEntity<Map<String, Object>> getProductWithoutErrors (@RequestHeader(value = "email", required = true) String email) {
+        log.info("START :: CLASS :: ProductController :: METHOD :: getProductWithoutErrors");
+        ResponseEntity<Map<String, Object>> response = productHandler.getProductWithoutErrors(email);
+        log.info("END :: CLASS :: ProductController :: METHOD :: getProductWithoutErrors");
+        return response;
+    }
+
+    @DeleteMapping("/v1/bulkDeleteProduct")
+    public ResponseEntity<?> bulkDeleteProduct(
+            @RequestParam("ids") String ids,
+            HttpServletRequest request
+    ) {
+        log.info("START :: CLASS :: ProductController :: METHOD :: bulkDeleteProduct");
+        try {
+            List<Long> productIds = Arrays.stream(ids.split(","))
+                    .map(Long::parseLong)
+                    .toList();
+            log.info("END :: CLASS :: ProductController :: METHOD :: bulkDeleteProduct");
+            return productHandler.bulkDeleteProducts(productIds, request);
+
+        } catch (Exception e) {
+            log.error("ERROR :: CLASS :: ProductController :: METHOD :: bulkDeleteProduct");
+            throw new IMSException(ResponseCode.PRODUCT_NOT_FOUND, ResponseMessage.PRODUCT_NOT_FOUND);
+
+        }
+    }
+
+    @GetMapping("/v1/count")
+    public ResponseEntity<Map<String, Object>> getProductCount (@RequestHeader("email") String email) {
+        log.info("START :: CLASS :: ProductController :: METHOD :: getProductCount");
+        ResponseEntity<Map<String, Object>> response = productHandler.getProductCount(email);
+        log.info("END :: CLASS :: ProductController :: METHOD :: getProductCount");
+        return response;
+    }
+
 }

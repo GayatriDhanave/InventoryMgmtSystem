@@ -14,11 +14,11 @@ public class ErrorRecords {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int errorId;
+    private long errorId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "product_id")
-    @JsonBackReference(value = "product-error") // Break recursion
+    @JsonBackReference(value = "product-error")
     @ToString.Exclude
     private Products product;
 

@@ -34,6 +34,9 @@ public class Service implements IService {
     @Autowired
     private FileRepository fileRepository;
 
+    @Autowired
+    private ErrorRepository errorRepository;
+
 
     @Override
     public UserData getUserByEmail (String email) {
@@ -62,8 +65,8 @@ public class Service implements IService {
     }
 
     @Override
-    public Products getProductByNameAndSuppiler (String productName, Supplier supplier) {
-        return  productRepository.getProductsByProductNameAndSupplier(productName, supplier);
+    public Products getProductByNameAndSuppiler (String productName, Supplier supplier, UserData userData) {
+        return  productRepository.getProductsByProductNameAndSupplierAndAddedBy(productName, supplier, userData);
     }
 
     @Override
@@ -96,7 +99,7 @@ public class Service implements IService {
     }
 
     @Override
-    public void deleteSuppilers (int suppilerId) {
+    public void deleteSuppilers (long suppilerId) {
         suppilerRepository.deleteById(suppilerId);
     }
 
@@ -111,7 +114,7 @@ public class Service implements IService {
     }
 
     @Override
-    public Products getProductById (int productId) {
+    public Products getProductById (long productId) {
 
         return productRepository.findById(productId).get();
     }
@@ -131,12 +134,12 @@ public class Service implements IService {
     }
 
     @Override
-    public void deleteProduct(int productId){
+    public void deleteProduct(long productId){
         productRepository.deleteById(productId);
     }
 
     @Override
-    public Supplier getSupplierById (int suppilerId) {
+    public Supplier getSupplierById (long suppilerId) {
         return suppilerRepository.findById(suppilerId).get();
     }
 
@@ -181,23 +184,53 @@ public class Service implements IService {
     }
 
     @Override
-    public Optional<FileUpload> findTopByEmailAndStatusNot (String email, String uploadStatus) {
-        return fileRepository.findTopByEmailAndStatusNot(email, uploadStatus);
+    public Optional<FileUpload> findTopByEmailAndStatusNot (UserData user, String uploadStatus) {
+        return fileRepository.findTopByUserDataAndStatusNot(user, uploadStatus);
     }
 
     @Override
-    public boolean existsByEmailAndStatusNot (String email, String uploadStatus) {
-        return fileRepository.existsByEmailAndStatusNot(email, uploadStatus);
+    public boolean existsByEmailAndStatusNot (UserData user, String uploadStatus) {
+        return fileRepository.existsByUserDataAndStatusNot(user, uploadStatus);
     }
 
     @Override
-    public FileUpload getFileByEmailAndStatusIn (String email, List<? extends Serializable> list) {
+    public FileUpload getFileByEmailAndStatusIn (UserData user, List<? extends Serializable> list) {
         return null;
     }
 
     @Override
-    public List<FileUpload> getFileUploadHistory (String email) {
-        return fileRepository.getFileUploadByEmail(email);
+    public List<FileUpload> getFileUploadHistory (UserData user) {
+        return fileRepository.getFileUploadByUserData(user);
+    }
+
+    @Override
+    public List<Products> getProductsWithErrors (UserData userData) {
+        return productRepository.findAllProductsWithErrorsAndAddedBy(userData);
+    }
+
+    @Override
+    public List<Products> getProductsWithoutErrors (UserData user) {
+        return productRepository.findProductsWithoutErrorsAndAddedBy(user);
+    }
+
+    @Override
+    public void bulkDeleteProducts (List<Long> productIds) {
+        productRepository.deleteAllByIdInBatch(productIds);
+    }
+
+    @Override
+    public void bulkDeleteSuppliers (List<Long> supplierIds) {
+        suppilerRepository.deleteAllByIdInBatch(supplierIds);
+    }
+
+    @Override
+    public void deleteErrorRecords (Products product) {
+        errorRepository.deleteByProduct(product);
+    }
+
+    @Override
+    public int countProducts (UserData user) {
+        return productRepository.countProductsByAddedBy(user);
     }
 
 }

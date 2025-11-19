@@ -6,9 +6,14 @@ import com.ims.inventoryManagementSystem.dto.ResponseDto;
 import com.ims.inventoryManagementSystem.entity.Category;
 import com.ims.inventoryManagementSystem.entity.Products;
 import com.ims.inventoryManagementSystem.entity.UserData;
+import com.ims.inventoryManagementSystem.exception.IMSException;
+import com.ims.inventoryManagementSystem.response.ResponseCode;
 import com.ims.inventoryManagementSystem.response.ResponseHandler;
+import com.ims.inventoryManagementSystem.response.ResponseMessage;
 import com.ims.inventoryManagementSystem.service.IService;
 import jakarta.persistence.criteria.Predicate;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -44,7 +49,6 @@ public class ProductHandler implements  IProductHandler {
     }
 
     /**
-     *
      * @param productName
      * @param category
      * @param supplier
@@ -52,12 +56,14 @@ public class ProductHandler implements  IProductHandler {
      * @param order
      * @param pageNum
      * @param limit
+     * @param email
      * @return Map
      */
     @Override
-    public ResponseEntity<Map<String, Object>> getAllProducts (String productName, String category, String supplier, String sortBy, int order, int pageNum, int limit) {
+    public ResponseEntity<Map<String, Object>> getAllProducts (String productName, String category, String supplier, String sortBy, int order, int pageNum, int limit, String email) {
         log.info("START :: CLASS :: ProductHandler :: METHOD :: getAllProducts");
-        Specification<Products> specification = withFilter(productName, category, supplier);
+        UserData userData=service.getUserByEmail(email);
+        Specification<Products> specification = withFilter(productName, category, supplier, userData);
         Sort.Direction sortDirection = -1 == order ? Sort.Direction.ASC : Sort.Direction.DESC;
         Sort sort = Sort.by(sortDirection, sortBy);
         Pageable pageable = PageRequest.of(pageNum - 1, limit, sort);
@@ -91,13 +97,13 @@ public class ProductHandler implements  IProductHandler {
     }
 
     /**
-     *
      * @param productName
      * @param category
      * @param supplier
+     * @param user
      * @return Map
      */
-    private Specification<Products> withFilter (String productName, String category, String supplier) {
+    private Specification<Products> withFilter (String productName, String category, String supplier, UserData user) {
 
         return ((root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
@@ -122,16 +128,17 @@ public class ProductHandler implements  IProductHandler {
      * @return Map
      */
     @Override
+    @Transactional
     public ResponseEntity<Map<String, Object>> addProduct (Products product, String email) {
         log.info("START :: CLASS :: ProductHandler :: METHOD :: addProduct :: PRODUCT_NAME :: {}",
                 product.getProductName());
         try{
+            UserData userData=service.getUserByEmail(email);
             Products existingProduct=service.getProductByNameAndSuppiler(product.getProductName(),
-                    product.getSupplier());
-            UserData addedBy=service.getUserByEmail(email);
+                    product.getSupplier(), userData);
             if(existingProduct==null){
                 product.setAddedDate(new Date());
-                product.setAddedBy(addedBy);
+                product.setAddedBy(userData);
                service.addProduct(product);
             }
             else{
@@ -141,11 +148,20 @@ public class ProductHandler implements  IProductHandler {
                 existingProduct.setSupplier(product.getSupplier());
                 existingProduct.setCategory(product.getCategory());
                 existingProduct.setAddedBy(product.getAddedBy());
+                if(product.getErrorRecords()==null){
+                    if(existingProduct.getErrorRecords()!=null){
+                        service.deleteErrorRecords(existingProduct);
+                    }
+                    existingProduct.setErrorRecords(null);
+
+                } else {
+                    existingProduct.setErrorRecords(product.getErrorRecords());
+                }
                 service.addProduct(existingProduct);
             }
         } catch (Exception e){
-            return   new ResponseEntity<>(ResponseHandler.error("Couldn't add product"),
-                    HttpStatus.INTERNAL_SERVER_ERROR);
+            throw new IMSException(ResponseCode.CANNOT_ADD_PRODUCT, ResponseMessage.CANNOT_ADD_PRODUCT);
+
         }
         return null;
     }
@@ -172,7 +188,7 @@ public class ProductHandler implements  IProductHandler {
      * @return Map
      */
     @Override
-    public ResponseEntity<Map<String, Object>> deleteProduct (int productId) {
+    public ResponseEntity<Map<String, Object>> deleteProduct (long productId) {
         log.info("START :: CLASS :: ProductHandler :: METHOD :: deleteProduct :: PRODUCT_ID :: {}", productId);
         service.deleteProduct(productId);
         log.info("END :: CLASS :: ProductHandler :: METHOD :: deleteProduct :: PRODUCT_ID :: {}", productId);
@@ -185,7 +201,7 @@ public class ProductHandler implements  IProductHandler {
      * @return Map
      */
     @Override
-    public ResponseEntity<Map<String, Object>> getProductById (int productId) {
+    public ResponseEntity<Map<String, Object>> getProductById (long productId) {
         log.info("START :: CLASS :: ProductHandler :: METHOD :: getProductById :: PRODUCT_ID :: {}", productId);
         Products products=service.getProductById(productId);
         if(products!=null){
@@ -211,5 +227,88 @@ public class ProductHandler implements  IProductHandler {
 
 
 //        return null;
+    }
+
+    @Override
+    public ResponseEntity<Map<String, Object>> getProductWithErrors (String email) {
+        UserData user=service.getUserByEmail(email);
+        Map<String,Object> result=new HashMap<>();
+        List<ProductDto> productDtoList=new ArrayList<>();
+        List<Products> productsList=service.getProductsWithErrors(user);
+        if(productsList.isEmpty()){
+            result.put("data", productDtoList);
+        } else {
+           for (Products product : productsList) {
+               ProductDto productDto=new ProductDto();
+               productDto.setProductId(product.getId());
+               productDto.setProductName(product.getProductName());
+               productDto.setPrice(product.getPrice());
+               productDto.setQuantity(product.getQuantity());
+               productDto.setCategory(product.getCategory().getCategoryName());
+               productDto.setQuantity(product.getQuantity());
+               productDto.setSupplierName(product.getSupplier().getName());
+               productDto.setErrorRecordsList(product.getErrorRecords());
+               productDtoList.add(productDto);
+           }
+           result.put("data", productDtoList);
+        }
+        return new ResponseEntity<>(ResponseHandler.success(result),HttpStatus.OK);
+    }
+
+    @Override
+    public ResponseEntity<Map<String, Object>> getProductWithoutErrors (String email) {
+        UserData user=service.getUserByEmail(email);
+        Map<String,Object> result=new HashMap<>();
+        List<ProductDto> productDtoList=new ArrayList<>();
+        List<Products> productsList=service.getProductsWithoutErrors(user);
+        if(productsList.isEmpty()){
+            result.put("data", "No error records found");
+        } else {
+            for (Products product : productsList) {
+                ProductDto productDto=new ProductDto();
+                productDto.setProductName(product.getProductName());
+                productDto.setPrice(product.getPrice());
+                productDto.setQuantity(product.getQuantity());
+                productDto.setCategory(product.getCategory().getCategoryName());
+                productDto.setQuantity(product.getQuantity());
+                productDto.setSupplierName(product.getSupplier().getName());
+                productDtoList.add(productDto);
+            }
+            result.put("data", productDtoList);
+        }
+        return new ResponseEntity<>(ResponseHandler.success(result),HttpStatus.OK);
+    }
+
+    @Override
+    public ResponseEntity<?> bulkDeleteProducts (List<Long> productIds, HttpServletRequest request) {
+        if (productIds == null || productIds.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "status-code", 0,
+                    "status", "FAILED",
+                    "message", "No product IDs provided"
+            ));
+        }
+
+        try {
+            service.bulkDeleteProducts(productIds);
+
+            return ResponseEntity.ok(Map.of(
+                    "status-code", 1,
+                    "status", "SUCCESS",
+                    "message", "Products deleted successfully",
+                    "deletedIds", productIds
+            ));
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new IMSException(ResponseCode.BULK_DELETE_ERROR, ResponseMessage.BULK_DELETE_ERROR);
+
+        }
+    }
+
+    @Override
+    public ResponseEntity<Map<String, Object>> getProductCount (String email) {
+        int count=service.countProducts(service.getUserByEmail(email));
+        return new ResponseEntity<>(ResponseHandler.success(count),HttpStatus.OK);
     }
 }

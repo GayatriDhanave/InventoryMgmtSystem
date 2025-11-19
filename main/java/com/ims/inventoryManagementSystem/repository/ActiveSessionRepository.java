@@ -11,4 +11,6 @@ public interface ActiveSessionRepository extends JpaRepository<ActiveSession,Lon
     void deleteByEmail (String email);
 
     ActiveSession findByEmail (String email);
+
+    ActiveSession getActiveSessionByEmail (String email);
 }

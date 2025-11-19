@@ -1,61 +1,4 @@
-// $('#suppliers').ready(function () {
-//     let table2 = $('#suppliersTable').DataTable({
-//         serverSide: true,
-//         processing: true,
-//         ajax: function (data, callback) {
-//             const email = sessionStorage.getItem("email");
-//             const sessionId = sessionStorage.getItem("sessionId");
-//             var currentPage = 0;
-//             const filters = {
-//                 name: "",
-//                 email: "",
-//                 sortBy: data.columns[data.order[0].column].data,
-//                 order: data.order[0].dir === 'asc' ? 1 : -1,
-//                 pageNum: currentPage + 1,
-//                 limit: 10
-//             };
-//             $.ajax({
-//                 url: 'http://localhost:8080/inventoryManagementSystem_war/supplier/getAllSupplier',
-//                 type: 'GET',
-//                 data: filters,
-//                 headers: {email: email, sessionId: sessionId},
-//                 dataType: 'json',
-//                 success: function (resp) {
-//                     currentPage++;
-//                     if (resp.data) {
-//                         callback({
-//                             data: resp.data,
-//                             recordsTotal: resp.recordsTotal,
-//                             recordsFiltered: resp.recordsFiltered
-//                         });
-//                     } else {
-//                         callback({data: []});
-//                     }
-//                 },
-//                 error: function (xhr) {
-//                     if (xhr.status === 401) {
-//                         alert("Session expired. Please login again.");
-//                         sessionStorage.clear();
-//                         window.location.href = "login.html";
-//                     } else {
-//                         console.error("Error:", xhr.responseText);
-//                     }
-//                 }
-//             });
-//         },
-//         columns: [
-//             {data: 'supId'},
-//             {data: 'name'},
-//             {data: 'email'},
-//             {data: 'contact'},
-//             // {data: 'city'},
-//             // {data: 'country'}
-//         ]
-//     });
-//
-// });
-
-$(document).ready(function () {
+    $(document).ready(function () {
     supplierTableFunction();
 });
 
@@ -77,17 +20,11 @@ function supplierAjax() {
         data: filters,
         headers: {
             email: sessionStorage.getItem('email'),
-            // sessionId: sessionStorage.getItem('sessionId'),
             token: sessionStorage.getItem("token")
 
         },
         dataType: 'json',
         success: function (resp) {
-            // const result = {
-            //     data: resp.data || [],
-            //     recordsTotal: resp.recordsTotal || 0,
-            //     recordsFiltered: resp.recordsFiltered || 0
-            // };
 
             const inner = resp.data;
 
@@ -100,9 +37,11 @@ function supplierAjax() {
         },
         error: function (xhr) {
             if (xhr.status === 401) {
-                alert("Session expired. Please login again.");
+                // alert("Session expired. Please login again.");
+                showToast("Please login!", "error");
+
                 sessionStorage.clear();
-                window.location.href = "login.html";
+                window.location.href = "index.html";
             } else {
                 console.error("Error:", xhr.responseText);
                 deferred.reject(xhr);
@@ -131,54 +70,89 @@ function supplierTableFunction() {
             {
                 data: null,
                 render: function (data, type, row) {
-                    return `<input type="radio" name="supplierSelect" value="${row.supId}">`;
+                    return `<input type="checkbox" name="supplierSelect" value="${row.supId}">`;
                 },
                 orderable: false
             },
-            {data: 'supId'},
+            {data:null},
+            // {data: 'supId'},
             {data: 'name'},
             {data: 'contact'},
             {data: 'email'},
-            {"data": null,
-                "defaultContent": '<i class="fas fa-edit edit-icon"></i> <i class="fas fa-trash-alt delete-icon"></i> <i class="fa-solid fa-circle-info"></i>',
-                "render": function (data, type, row) {
 
-                    let icons = '<button id="editSupplierBtn" onclick="editProduct(${"#row.productId"})"> <i class="fas fa-edit edit-icon" data-id="' + row.id + '"></i> </button>';
-                    icons += '<button id="deleteSupplierBtn"> <i class="fas fa-trash-alt delete-icon" data-id="' + row.id + '"></i> </button>';
-                    icons += '<button id="viewSupplierBtn"> <i class="fa-solid fa-circle-info" data-id="' + row.id + '"></i> </button>';
-                    return icons;},
-                orderable: false
-            }
+            { render: (d, t, row) =>
+                    `<i class="fas fa-edit edit-icon" onclick="editSupplier('${row.supId}')"></i> <i class="fa-solid fa-circle-info" onclick="viewSupplier('${row.supId}')"></i>  <i class="fas fa-trash-alt delete-icon" onclick="deleteSupplier('${row.supId}')"></i>`}
 
         ]
     });
+    applySerialNumber('#suppliersTable', 1);
 }
 
+$('#bulkDeleteSupplierBtn').off('click').on('click', function () {
 
-$('#editSupplierBtn').click(function () {
-    const selectedId = $('input[name="supplierSelect"]:checked').val();
-    if (!selectedId) {
-        alert("Please select a supplier to edit!");
+    const selectedIds = $('input[name="supplierSelect"]:checked')
+        .map(function () { return $(this).val(); })
+        .get();
+
+    if (selectedIds.length === 0) {
+        showToast("Please select a supplier!", "warning");
+
+        return;
+    }
+
+    if (!confirm("Are you sure you want to delete selected suppliers?")) {
         return;
     }
 
     $.ajax({
-        url: 'http://localhost:8080/inventoryManagementSystem_war/supplier/getSuppiler?supplierId=' + selectedId,
-        method: 'GET',
+        url: 'http://localhost:8080/inventoryManagementSystem_war/supplier/v1/bulkDeleteSupplier?ids='
+            + selectedIds.join(','),
+        method: 'DELETE',
+        headers: {
+            email: sessionStorage.getItem('email'),
+            token: sessionStorage.getItem("token")
+        },
         success: function (resp) {
-            const supplier = resp.data;
-            $('#supplierId').val(supplier.supId);
-            $('#supplierName').val(supplier.name);
-            $('#supplierContact').val(supplier.contact);
-            $('#supplierEmail').val(supplier.email);
-            $('#editSupplierModal').modal('show');
+            // alert("Selected products deleted successfully!");
+            showToast("Suppliers deleted successfully!", "success");
+
+            supplierTableFunction();
         },
         error: function () {
-            alert('Failed to fetch supplier details.');
+            showToast("Error deleting supplier!", "error");
         }
     });
 });
 
+
+function editSupplier(selectedId){
+    // $('#editSupplierBtn').click(function () {
+    //     const selectedId = $('input[name="supplierSelect"]:checked').val();
+    //     if (!selectedId) {
+    //         alert("Please select a supplier to edit!");
+    //         return;
+    //     }
+
+        $.ajax({
+            url: 'http://localhost:8080/inventoryManagementSystem_war/supplier/getSuppiler?supplierId=' + selectedId,
+            method: 'GET',
+            success: function (resp) {
+                const supplier = resp.data;
+                $('#supplierId').val(supplier.supId);
+                $('#supplierName').val(supplier.name);
+                $('#supplierContact').val(supplier.contact);
+                $('#supplierEmail').val(supplier.email);
+                $('#editSupplierModal').modal('show');
+
+            },
+            error: function () {
+                showToast("Failed to fetch supplier details!", "error");
+                // alert('Failed to fetch supplier details.');
+            }
+        });
+    // });
+
+}
 $.validator.addMethod("pattern", function (value, element, param) {
     if (this.optional(element)) {
         return true;
@@ -247,13 +221,13 @@ $('#addSupplierForm').validate({
             contentType: "application/json",
             data: JSON.stringify(userData),
             success: function (response) {
-                alert("Supplier added successfully!");
+                showToast("Supplier added successfully!", "success");
                 $('#addSupplierModal').modal('hide');
-                table2.ajax.reload();
+                supplierTableFunction();
                 form.reset();
             },
             error: function (xhr) {
-                alert("Error adding supplier: " + xhr.responseText);
+                showToast("Error adding supplier!", "error");
             }
         });
     }
@@ -317,68 +291,107 @@ $('#editSupplierForm').validate({
             contentType: "application/json",
             data: JSON.stringify(supplierData),
             success: function (response) {
-                alert("Suppiler updated successfully!");
+                showToast("Supplier aupdate successfully!", "success");
+                // alert("Suppiler updated successfully!");
                 $('#editSupplierModal').modal('hide');
-                table.ajax.reload();
+                supplierTableFunction();
                 form.reset();
             },
             error: function (xhr) {
-                alert("Error adding supplier: " + xhr.responseText);
+                showToast("Error updating supplier!", "error");
             }
         });
     }
 });
 
-$('#deleteSupplierBtn').click(function (){
+function deleteSupplier(selectedId){
 
-    const selectedId = $('input[name="supplierSelect"]:checked').val();
-    if (!selectedId) {
-        alert("Please select a supplier to delete!");
-        return;
+
+        $.ajax({
+            url: 'http://localhost:8080/inventoryManagementSystem_war/supplier/deleteSupplier?supplierId=' + selectedId,
+            method: 'DELETE',
+            success: function (resp){
+                showToast("Supplier deleted successfully!", "success");
+                supplierTableFunction();
+            },
+            error: function (resp){
+                showToast("Error deleting supplier!", "error");
+            }
+        });
+    // });
+
+}
+
+
+function viewSupplier(selectedId){
+
+        $.ajax({
+            url: 'http://localhost:8080/inventoryManagementSystem_war/supplier/getSuppiler?supplierId=' + selectedId,
+            method: 'GET',
+            headers: {
+                email: sessionStorage.getItem('email'),
+                Authorization: "Bearer " + sessionStorage.getItem("token")
+            },
+            success: function (resp) {
+                const supplier = resp.data;
+
+                // Populate supplier details in modal
+                $('#sId').text(supplier.supId || '-');
+                $('#sName').text(supplier.name || '-');
+                $('#sEmail').text(supplier.email || '-');
+                $('#sContact').text(supplier.contact || '-');
+
+                $('#supplierDetailsModal').modal('show');
+            },
+            error: function (resp) {
+                showToast("Error fetching suppliers!", "error");
+                // alert("Error fetching supplier! Please try again.");
+                console.error("Fetch supplier failed:", resp);
+            }
+        });
+}
+
+function applySerialNumber(tableId, columnIndex = 0) {
+        const table = $(tableId).DataTable();
+
+        table.on('draw.dt', function () {
+            let pageInfo = table.page.info();
+            table.column(columnIndex, { search: 'applied', order: 'applied' })
+                .nodes()
+                .each(function (cell, i) {
+                    cell.innerHTML = pageInfo.start + i + 1;
+                });
+        });
     }
 
-    $.ajax({
-        url: 'http://localhost:8080/inventoryManagementSystem_war/supplier/deleteSupplier?supplierId=' + selectedId,
-        method: 'DELETE',
-        success: function (resp){
-            alert("Supplier deleted successfully!");
-        },
-        error: function (resp){
-            alert("Error deleting supplier! Please try again.");
-        }
-    });
-});
+function showToast(message, type = "success") {
+    const container = document.getElementById("toastContainer");
 
+    const toast = document.createElement("div");
+    toast.classList.add("toastBox");
 
-
-$('#viewSupplierBtn').click(function () {
-    const selectedId = $('input[name="supplierSelect"]:checked').val();
-    if (!selectedId) {
-        alert("Please select a supplier to view!");
-        return;
+    if (type === "error") {
+        toast.classList.add("toast-error");
+    } else if(type=="warning"){
+        toast.classList.add("toast-warning");
+    }
+    else {
+        toast.classList.add("toast-success");
     }
 
-    $.ajax({
-        url: 'http://localhost:8080/inventoryManagementSystem_war/supplier/getSuppiler?supplierId=' + selectedId,
-        method: 'GET',
-        headers: {
-            email: sessionStorage.getItem('email'),
-            Authorization: "Bearer " + sessionStorage.getItem("token")
-        },
-        success: function (resp) {
-            const supplier = resp.data;
+    toast.innerText = message;
 
-            // Populate supplier details in modal
-            $('#sId').text(supplier.supId || '-');
-            $('#sName').text(supplier.name || '-');
-            $('#sEmail').text(supplier.email || '-');
-            $('#sContact').text(supplier.contact || '-');
+    container.appendChild(toast);
 
-            $('#supplierDetailsModal').modal('show');
-        },
-        error: function (resp) {
-            alert("Error fetching supplier! Please try again.");
-            console.error("Fetch supplier failed:", resp);
-        }
-    });
-});
+    setTimeout(() => {
+        toast.classList.add("toast-show");
+    }, 100);
+
+
+    setTimeout(() => {
+        toast.classList.remove("toast-show");
+        setTimeout(() => toast.remove(), 400);
+    }, 5000);
+}
+
+

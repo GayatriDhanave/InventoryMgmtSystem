@@ -2,16 +2,18 @@ package com.ims.inventoryManagementSystem.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ims.inventoryManagementSystem.entity.Category;
+import com.ims.inventoryManagementSystem.entity.ErrorRecords;
 import com.ims.inventoryManagementSystem.entity.Supplier;
 import lombok.Data;
 
 import java.util.Date;
+import java.util.List;
 
 @Data
 public class ProductDto {
 
     @JsonProperty("productId")
-    private int productId;
+    private long productId;
 
     @JsonProperty("productName")
     private String productName;
@@ -30,6 +32,8 @@ public class ProductDto {
 
 //    @JsonProperty("dateAdded")
 //    private Date addedDate;
+
+    private List<ErrorRecords> errorRecordsList;
 
     @JsonProperty(value = "selected", defaultValue = "false")
     private boolean selected;

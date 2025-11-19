@@ -1,12 +1,19 @@
 package com.ims.inventoryManagementSystem.controller;
 
 import com.ims.inventoryManagementSystem.entity.Supplier;
+import com.ims.inventoryManagementSystem.exception.IMSException;
 import com.ims.inventoryManagementSystem.handler.ISuppilerHandler;
+import com.ims.inventoryManagementSystem.response.ResponseCode;
+import com.ims.inventoryManagementSystem.response.ResponseMessage;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -43,6 +50,11 @@ public class Suppliercontroller {
         return response;
     }
 
+    /**
+     *
+     * @param suppiler
+     * @return Map
+     */
     @PostMapping("addSupplier")
     public ResponseEntity<Map<String, Object>> addSupplier (@RequestBody Supplier suppiler) {
         log.info("START :: CLASS :: Suppliercontroller :: METHOD :: addSupplier");
@@ -51,6 +63,11 @@ public class Suppliercontroller {
         return response;
     }
 
+    /**
+     *
+     * @param suppiler
+     * @return Map
+     */
     @PutMapping("updateSupplier")
     public ResponseEntity<Map<String, Object>> updateSuppiler (@RequestBody Supplier suppiler) {
         log.info("START :: CLASS :: Suppliercontroller :: METHOD :: updateSupplier");
@@ -59,6 +76,11 @@ public class Suppliercontroller {
         return response;
     }
 
+    /**
+     *
+     * @param supplierId
+     * @return Map
+     */
     @DeleteMapping("/deleteSupplier")
     public ResponseEntity<Map<String, Object>> deleteSupplier (@RequestParam int supplierId) {
         log.info("START :: CLASS :: Suppliercontroller :: METHOD :: deleteSupplier");
@@ -67,9 +89,14 @@ public class Suppliercontroller {
         return response;
     }
 
+    /**
+     *
+     * @param supplierId
+     * @return Map
+     */
     @GetMapping("/getSuppiler")
     public ResponseEntity<Map<String, Object>> getById (
-            @RequestParam("supplierId") int supplierId
+            @RequestParam("supplierId") long supplierId
     ) {
         log.info("START :: CLASS :: Suppliercontroller :: METHOD :: getById");
         ResponseEntity<Map<String, Object>> response = suppilerHandler.getSupplierById(supplierId);
@@ -77,6 +104,10 @@ public class Suppliercontroller {
         return response;
     }
 
+    /**
+     *
+     * @return Map
+     */
     @GetMapping("/getAllSuppliers")
     public ResponseEntity<Map<String, Object>> getAllSuppliers () {
         log.info("START :: CLASS :: Suppliercontroller :: METHOD :: getAllSuppliers");
@@ -84,4 +115,37 @@ public class Suppliercontroller {
         log.info("END :: CLASS :: Suppliercontroller :: METHOD :: getAllSuppliers");
         return response;
     }
+
+    /**
+     *
+     * @param ids
+     * @param request
+     * @return
+     */
+    @DeleteMapping("/v1/bulkDeleteSupplier")
+    public ResponseEntity<?> bulkDeleteProduct(
+            @RequestParam("ids") String ids,
+            HttpServletRequest request
+    ) {
+        try {
+            List<Long> supplierIds = Arrays.stream(ids.split(","))
+                    .map(Long::parseLong)
+                    .toList();
+
+            return suppilerHandler.bulkDeleteSuppliers(supplierIds, request);
+
+        } catch (Exception e) {
+            throw new IMSException(ResponseCode.SUPPLIER_NOT_FOUND, ResponseMessage.SUPPLIER_NOT_FOUND);
+
+        }
+    }
+
+    @GetMapping("/v1/count")
+    public ResponseEntity<Map<String, Object>> getSupplierCount (@RequestHeader("email") String email) {
+        log.info("START :: CLASS :: ProductController :: METHOD :: getProductCount");
+        ResponseEntity<Map<String, Object>> response = suppilerHandler.getSuppilerCount(email);
+        log.info("END :: CLASS :: ProductController :: METHOD :: getProductCount");
+        return response;
+    }
+
 }

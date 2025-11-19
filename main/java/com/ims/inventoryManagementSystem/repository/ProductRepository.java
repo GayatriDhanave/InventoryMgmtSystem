@@ -6,6 +6,7 @@ import com.ims.inventoryManagementSystem.entity.UserData;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
@@ -16,8 +17,8 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 @Repository
-public interface ProductRepository extends CrudRepository<Products, Integer> {
-    Products getProductsByProductNameAndSupplier (String productName, Supplier supplier);
+public interface ProductRepository extends JpaRepository<Products, Long> {
+    Products getProductsByProductNameAndSupplierAndAddedBy (String productName, Supplier supplier, UserData userData);
 
     Page findAll (Specification<Products> specification, Pageable pageable);
 
@@ -40,4 +41,24 @@ public interface ProductRepository extends CrudRepository<Products, Integer> {
     List<Products> findAllByErrorRecordsNotNullAndAddedBy (long uid);
 
     List<Products> findAllByAddedByAndErrorRecordsNotNull (UserData userByEmail);
+
+//    @Query("SELECT DISTINCT p FROM Products p LEFT JOIN FETCH p.errorRecords")
+@Query("SELECT p FROM Products p " +
+        "WHERE p.addedBy = :userData AND EXISTS (" +
+        "   SELECT er FROM ErrorRecords er WHERE er.product = p" +
+        ")")
+    List<Products> findAllProductsWithErrorsAndAddedBy(UserData userData);
+
+    @Query("SELECT p FROM Products p " +
+            "WHERE p.addedBy = :userData AND NOT EXISTS (" +
+            "   SELECT er FROM ErrorRecords er WHERE er.product = p" +
+            ")")
+    List<Products> findProductsWithoutErrorsAndAddedBy(UserData userData);
+
+    int countProductsByAddedBy (UserData user);
+
+//    void deleteAllById (List<Long> productIds);
+
+//    void deleteAllByIdInBatch (List<Integer> productIds);
+
 }

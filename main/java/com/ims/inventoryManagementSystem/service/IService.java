@@ -22,7 +22,7 @@ public interface IService {
 
     List<Products> getProducts ();
 
-    Products getProductByNameAndSuppiler (String productName, Supplier supplier);
+    Products getProductByNameAndSuppiler (String productName, Supplier supplier, UserData userData);
 
     void addProduct (Products product);
 
@@ -32,19 +32,19 @@ public interface IService {
 
     Supplier updateSuppilers (Supplier suppiler);
 
-    void deleteSuppilers (int suppilerId);
+    void deleteSuppilers (long suppilerId);
 
     Page findAllSupplier (Specification<Supplier> specification, Pageable pageable);
 
     Page findAllProducts (Specification<Products> specification, Pageable pageable);
 
-    Products getProductById (int productId);
+    Products getProductById (long productId);
 
     Products updateProduct (Products product);
 
-    void deleteProduct(int productId);
+    void deleteProduct(long productId);
 
-    Supplier getSupplierById (int suppilerId);
+    Supplier getSupplierById (long suppilerId);
 
     Category getCategoryByName (String stringCellValue);
 
@@ -62,11 +62,23 @@ public interface IService {
 
     void saveFile (FileUpload fileUpload);
 
-    Optional<FileUpload> findTopByEmailAndStatusNot (String email, String uploadStatus);
+    Optional<FileUpload> findTopByEmailAndStatusNot (UserData user, String uploadStatus);
 
-    boolean existsByEmailAndStatusNot (String email, String uploadStatus);
+    boolean existsByEmailAndStatusNot (UserData user, String uploadStatus);
 
-    FileUpload getFileByEmailAndStatusIn (String email, List<? extends Serializable> list);
+    FileUpload getFileByEmailAndStatusIn (UserData user, List<? extends Serializable> list);
 
-    List<FileUpload> getFileUploadHistory (String email);
+    List<FileUpload> getFileUploadHistory (UserData user);
+
+    List<Products> getProductsWithErrors (UserData userData);
+
+    List<Products> getProductsWithoutErrors (UserData user);
+
+    void bulkDeleteProducts (List<Long> productIds);
+
+    void bulkDeleteSuppliers (List<Long> supplierIds);
+
+    void deleteErrorRecords (Products product);
+
+    int countProducts (UserData user);
 }

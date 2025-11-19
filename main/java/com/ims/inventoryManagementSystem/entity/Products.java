@@ -18,12 +18,12 @@ public class Products {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
+    private long id;
 
     private String productName;
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JsonManagedReference(value = "category-products")
+//    @JsonManagedReference(value = "category-products")
     @ToString.Exclude
     private Category category;
 

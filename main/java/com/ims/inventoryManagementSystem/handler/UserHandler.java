@@ -24,8 +24,6 @@ public class UserHandler implements  IUserHandler {
 
     @Autowired
     private IService userService;
-//    @Autowired
-//    private final PasswordEncoder passwordEncoder=new BCryptPasswordEncoder();
 
     @Override
     public ResponseEntity<Map<String, Object>> login (String email, String password) {
@@ -52,7 +50,6 @@ public class UserHandler implements  IUserHandler {
     public ResponseEntity<Map<String, Object>> register (UserData userData) {
         log.info("START :: CLASS :: UserHandler :: METHOD :: EMAIL :: {}", userData.getEmail());
             String password=userData.getPassword();
-//            userData.setPassword(passwordEncoder.encode(password));
             userService.addUser(userData);
         log.info("END :: CLASS :: UserHandler :: METHOD :: EMAIL :: {}", userData.getEmail());
         Map<String, Object> result=new HashMap<>();
