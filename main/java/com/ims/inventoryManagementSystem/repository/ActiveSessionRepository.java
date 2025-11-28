@@ -13,4 +13,10 @@ public interface ActiveSessionRepository extends JpaRepository<ActiveSession,Lon
     ActiveSession findByEmail (String email);
 
     ActiveSession getActiveSessionByEmail (String email);
+
+    boolean findActiveSessionBySessionIdAndEmail (String token, String email);
+
+//    ActiveSessionRepository findByToken (String token);
+
+    Object findBySessionId (String token);
 }

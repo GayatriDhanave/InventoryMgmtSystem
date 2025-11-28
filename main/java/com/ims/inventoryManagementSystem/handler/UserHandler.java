@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 //import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -33,7 +34,7 @@ public class UserHandler implements  IUserHandler {
         String sessionId= UUID.randomUUID().toString();
         ActiveSession activeSession=new ActiveSession();
         activeSession.setSessionId(sessionId);
-        activeSession.setCreatedAt(new Date());
+        activeSession.setCreatedAt(LocalDateTime.now());
         activeSession.setEmail(email);
         userService.addSession(activeSession);
 

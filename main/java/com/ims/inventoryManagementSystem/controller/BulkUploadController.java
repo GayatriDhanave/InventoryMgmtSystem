@@ -27,6 +27,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 @Slf4j
 @RestController
@@ -77,9 +78,10 @@ public class BulkUploadController {
                                                             HttpServletResponse response,
                                                             @RequestHeader("email") String email) throws Exception {
         log.info("START :: CLASS :: BulkUploadController :: METHOD :: uploadExcel");
-        Map<String, Object>result = excelHandler.processExcel(file, email);
+        CompletableFuture<Map<String, Object>> result = excelHandler.processExcel(file, email);
+        Map<String, Object> resp=result.get();
         log.info("END :: CLASS :: BulkUploadController :: METHOD :: uploadExcel");
-        return new ResponseEntity<>(ResponseHandler.success(result), HttpStatus.OK);//new ResponseEntity<>(ResponseHandler.success(result), HttpStatus.OK);
+        return new ResponseEntity<>(ResponseHandler.success(resp), HttpStatus.OK);//new ResponseEntity<>(ResponseHandler.success(result), HttpStatus.OK);
 
     }
 

@@ -37,7 +37,14 @@ public interface ProductRepository extends JpaRepository<Products, Long> {
 
     List<Products> findAllByAddedBy (UserData addedBy);
 
-    @Query(value = "select * from Products p join error_records e on p.id=e.product_id where p.added_by_id=:uid", nativeQuery = true)
+//    @Query(value = "select distinct p from Products p join error_records e on p.id=e.product_id where p.added_by_id=:uid", nativeQuery = true)
+@Query(
+        value = "SELECT DISTINCT p.* " +
+                "FROM products p " +
+                "JOIN error_records e ON p.id = e.product_id " +
+                "WHERE p.added_by_id = :uid",
+        nativeQuery = true
+)
     List<Products> findAllByErrorRecordsNotNullAndAddedBy (long uid);
 
     List<Products> findAllByAddedByAndErrorRecordsNotNull (UserData userByEmail);

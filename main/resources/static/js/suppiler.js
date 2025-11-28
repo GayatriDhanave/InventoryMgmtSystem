@@ -81,7 +81,7 @@ function supplierTableFunction() {
             {data: 'email'},
 
             { render: (d, t, row) =>
-                    `<i class="fas fa-edit edit-icon" onclick="editSupplier('${row.supId}')"></i> <i class="fa-solid fa-circle-info" onclick="viewSupplier('${row.supId}')"></i>  <i class="fas fa-trash-alt delete-icon" onclick="deleteSupplier('${row.supId}')"></i>`}
+                    `<i class="fas fa-edit edit-icon" style="color: #1d4bc5" onclick="editSupplier('${row.supId}')"></i> &nbsp &nbsp <i class="fa-solid fa-eye" style="color: #1d4bc5;" onclick="viewSupplier('${row.supId}')"></i> &nbsp &nbsp <i class="fas fa-trash-alt delete-icon" style="color: #1d4bc5" onclick="deleteSupplier('${row.supId}')"></i>`}
 
         ]
     });
@@ -139,10 +139,10 @@ function editSupplier(selectedId){
             success: function (resp) {
                 const supplier = resp.data;
                 $('#supplierId').val(supplier.supId);
-                $('#supplierName').val(supplier.name);
-                $('#supplierContact').val(supplier.contact);
-                $('#supplierEmail').val(supplier.email);
-                $('#editSupplierModal').modal('show');
+                $('#addSupplierName').val(supplier.name);
+                $('#addSupplierContact').val(supplier.contact);
+                $('#addSupplierEmail').val(supplier.email);
+                $('#addSupplierModal').modal('show');
 
             },
             error: function () {

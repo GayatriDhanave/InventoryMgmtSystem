@@ -1,7 +1,6 @@
 package com.ims.inventoryManagementSystem.service;
 
 import com.ims.inventoryManagementSystem.entity.*;
-import com.ims.inventoryManagementSystem.enums.UploadStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -68,7 +67,7 @@ public interface IService {
 
     FileUpload getFileByEmailAndStatusIn (UserData user, List<? extends Serializable> list);
 
-    List<FileUpload> getFileUploadHistory (UserData user);
+    List<FileUpload> getFileUploadHistory (UserData user, Pageable pageable);
 
     List<Products> getProductsWithErrors (UserData userData);
 
@@ -81,4 +80,10 @@ public interface IService {
     void deleteErrorRecords (Products product);
 
     int countProducts (UserData user);
+
+    Optional<FileUpload> findById (int fileId);
+
+    void deleteSessionByEmail (String email);
+
+    boolean findSessionByToken (String token, String email);
 }

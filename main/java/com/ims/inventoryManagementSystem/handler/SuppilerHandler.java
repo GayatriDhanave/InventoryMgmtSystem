@@ -49,7 +49,7 @@ public class SuppilerHandler implements  ISuppilerHandler {
             List<Supplier>supplierList= new ArrayList<>();
             Specification<Supplier> specification = withFilter(supplierName, email);
             Sort.Direction sortDirection = -1 == order ? Sort.Direction.ASC : Sort.Direction.DESC;
-            Sort sort = Sort.by(sortDirection, sortBy);
+            Sort sort = Sort.by(Sort.Direction.DESC, sortBy);
             Pageable pageable = PageRequest.of(pageNum - 1, limit, sort);
             Page<Supplier> page = service.findAllSupplier(specification, pageable);
             if (page.hasContent()){

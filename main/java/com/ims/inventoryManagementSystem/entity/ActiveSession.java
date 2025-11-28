@@ -6,6 +6,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import lombok.Data;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 
 @Data
@@ -17,7 +18,8 @@ public class ActiveSession {
     private int id;
     private String email;
     private String sessionId;
-    private Date createdAt;
+    private LocalDateTime createdAt;
+    private LocalDateTime expiresAt;
 
 
 }

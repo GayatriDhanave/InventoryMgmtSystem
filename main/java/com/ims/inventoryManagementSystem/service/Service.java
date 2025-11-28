@@ -1,7 +1,6 @@
 package com.ims.inventoryManagementSystem.service;
 
 import com.ims.inventoryManagementSystem.entity.*;
-import com.ims.inventoryManagementSystem.enums.UploadStatus;
 import com.ims.inventoryManagementSystem.repository.*;
 import org.springframework.data.domain.Page;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -199,8 +198,8 @@ public class Service implements IService {
     }
 
     @Override
-    public List<FileUpload> getFileUploadHistory (UserData user) {
-        return fileRepository.getFileUploadByUserData(user);
+    public List<FileUpload> getFileUploadHistory (UserData user, Pageable pageable) {
+        return fileRepository.getFileUploadByUserData(user, pageable);
     }
 
     @Override
@@ -231,6 +230,21 @@ public class Service implements IService {
     @Override
     public int countProducts (UserData user) {
         return productRepository.countProductsByAddedBy(user);
+    }
+
+    @Override
+    public Optional<FileUpload> findById (int fileId) {
+        return fileRepository.findById(fileId);
+    }
+
+    @Override
+    public void deleteSessionByEmail (String email) {
+        activeSessionRepository.deleteByEmail(email);
+    }
+
+    @Override
+    public boolean findSessionByToken (String token, String email) {
+        return activeSessionRepository.findActiveSessionBySessionIdAndEmail(token, email);
     }
 
 }

@@ -4,6 +4,7 @@ import com.ims.inventoryManagementSystem.dto.ProductDetailsDto;
 import com.ims.inventoryManagementSystem.dto.ProductDto;
 import com.ims.inventoryManagementSystem.dto.ResponseDto;
 import com.ims.inventoryManagementSystem.entity.Category;
+import com.ims.inventoryManagementSystem.entity.ErrorRecords;
 import com.ims.inventoryManagementSystem.entity.Products;
 import com.ims.inventoryManagementSystem.entity.UserData;
 import com.ims.inventoryManagementSystem.exception.IMSException;
@@ -107,14 +108,15 @@ public class ProductHandler implements  IProductHandler {
 
         return ((root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
+            predicates.add(criteriaBuilder.equal(root.get("addedBy"), user));
             if (productName != null && !productName.isEmpty()) {
-                predicates.add(criteriaBuilder.like(criteriaBuilder.lower(root.get("productName")), "%" + productName.toLowerCase() + "%"));
+                predicates.add(criteriaBuilder.equal(criteriaBuilder.lower(root.get("productName")), "%" + productName.toLowerCase() + "%"));
             }
             if (category != null && !category.isEmpty()) {
-                predicates.add(criteriaBuilder.like(criteriaBuilder.lower(root.get("category")), "%" + category.toLowerCase() + "%"));
+                predicates.add(criteriaBuilder.equal(criteriaBuilder.lower(root.get("category")), "%" + category.toLowerCase() + "%"));
             }
             if (supplier != null && !supplier.isEmpty()) {
-                predicates.add(criteriaBuilder.like(criteriaBuilder.lower(root.get("supplier")), "%" + supplier.toLowerCase() + "%"));
+                predicates.add(criteriaBuilder.equal(criteriaBuilder.lower(root.get("supplier")), "%" + supplier.toLowerCase() + "%"));
             }
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
         });
@@ -127,44 +129,133 @@ public class ProductHandler implements  IProductHandler {
      * @param email
      * @return Map
      */
+//    @Override
+//    @Transactional
+//    public ResponseEntity<Map<String, Object>> addProduct (Products product, String email) {
+//        log.info("START :: CLASS :: ProductHandler :: METHOD :: addProduct :: PRODUCT_NAME :: {}",
+//                product.getProductName());
+//        try{
+//            UserData userData=service.getUserByEmail(email);
+//            Products existingProduct=service.getProductByNameAndSuppiler(product.getProductName(),
+//                    product.getSupplier(), userData);
+//            if(existingProduct==null){
+//                product.setAddedDate(new Date());
+//                product.setAddedBy(userData);
+//                if(product.getErrorRecords()==null){
+//                    product.setContainsError(false);
+//                } else {
+//                    product.setContainsError(true);
+//                }
+//               service.addProduct(product);
+//            }
+//            else{
+//                existingProduct.setProductName(product.getProductName());
+//                existingProduct.setPrice(product.getPrice());
+//                existingProduct.setQuantity(product.getQuantity());
+//                existingProduct.setSupplier(product.getSupplier());
+//                existingProduct.setCategory(product.getCategory());
+//                existingProduct.setAddedBy(product.getAddedBy());
+//                if(product.getErrorRecords()==null){
+//                    product.setContainsError(false);
+//                    if(existingProduct.getErrorRecords()!=null){
+//                        service.deleteErrorRecords(existingProduct);
+//                    }
+//                    existingProduct.setErrorRecords(null);
+//                    existingProduct.setContainsError(false);
+//
+//                } else {
+//                    product.setContainsError(true);
+//                    existingProduct.setErrorRecords(product.getErrorRecords());
+//                }
+//                service.addProduct(existingProduct);
+//            }
+//        } catch (Exception e){
+//            throw new IMSException(ResponseCode.CANNOT_ADD_PRODUCT, ResponseMessage.CANNOT_ADD_PRODUCT);
+//
+//        }
+//        return new ResponseEntity<>(ResponseHandler.success("Product added successfully!"), HttpStatus.OK);
+//    }
+
     @Override
     @Transactional
-    public ResponseEntity<Map<String, Object>> addProduct (Products product, String email) {
+    public ResponseEntity<Map<String, Object>> addProduct(Products product, String email) {
         log.info("START :: CLASS :: ProductHandler :: METHOD :: addProduct :: PRODUCT_NAME :: {}",
                 product.getProductName());
-        try{
-            UserData userData=service.getUserByEmail(email);
-            Products existingProduct=service.getProductByNameAndSuppiler(product.getProductName(),
-                    product.getSupplier(), userData);
-            if(existingProduct==null){
+        try {
+            UserData userData = service.getUserByEmail(email);
+
+            // Try to find existing product by name + supplier + user
+            Products existingProduct = service.getProductByNameAndSuppiler(
+                    product.getProductName(),
+                    product.getSupplier(),
+                    userData
+            );
+
+            // Helper to attach ErrorRecords to the product entity (ensures FK and cascade work)
+            if (product.getErrorRecords() != null && !product.getErrorRecords().isEmpty()) {
+                for (ErrorRecords er : product.getErrorRecords()) {
+                    er.setProduct(null); // ensure no stale reference
+                }
+            }
+
+            if (existingProduct == null) {
+                // New product
                 product.setAddedDate(new Date());
                 product.setAddedBy(userData);
-               service.addProduct(product);
-            }
-            else{
+
+                if (product.getErrorRecords() == null || product.getErrorRecords().isEmpty()) {
+                    product.setContainsError(false);
+                } else {
+                    // attach back-reference from each ErrorRecords -> this product
+                    product.setContainsError(true);
+                    for (ErrorRecords er : product.getErrorRecords()) {
+                        er.setProduct(product);
+                    }
+                }
+                service.addProduct(product);
+
+            } else {
+                // Update existing product fields
                 existingProduct.setProductName(product.getProductName());
                 existingProduct.setPrice(product.getPrice());
                 existingProduct.setQuantity(product.getQuantity());
                 existingProduct.setSupplier(product.getSupplier());
                 existingProduct.setCategory(product.getCategory());
-                existingProduct.setAddedBy(product.getAddedBy());
-                if(product.getErrorRecords()==null){
-                    if(existingProduct.getErrorRecords()!=null){
+                // keep addedBy as existing if not provided
+                if (product.getAddedBy() != null) {
+                    existingProduct.setAddedBy(product.getAddedBy());
+                }
+
+                // CASE: incoming product has no errors -> remove existing error records if any
+                if (product.getErrorRecords() == null || product.getErrorRecords().isEmpty()) {
+                    // If DB had error records previously, delete them from DB and clear the list
+                    if (existingProduct.getErrorRecords() != null && !existingProduct.getErrorRecords().isEmpty()) {
                         service.deleteErrorRecords(existingProduct);
+                        existingProduct.setErrorRecords(null);
                     }
-                    existingProduct.setErrorRecords(null);
+                    existingProduct.setContainsError(false);
 
                 } else {
+                    // incoming product has error records -> replace existing error list
+                    // ensure each error record references the parent (existingProduct)
+                    for (ErrorRecords er : product.getErrorRecords()) {
+                        er.setProduct(existingProduct);
+                    }
                     existingProduct.setErrorRecords(product.getErrorRecords());
+                    existingProduct.setContainsError(true);
                 }
+
+                // save updated product
                 service.addProduct(existingProduct);
             }
-        } catch (Exception e){
-            throw new IMSException(ResponseCode.CANNOT_ADD_PRODUCT, ResponseMessage.CANNOT_ADD_PRODUCT);
 
+        } catch (Exception e) {
+            log.error("ERROR :: ProductHandler.addProduct :: {}", e.getMessage(), e);
+            throw new IMSException(ResponseCode.CANNOT_ADD_PRODUCT, ResponseMessage.CANNOT_ADD_PRODUCT);
         }
-        return null;
+        return new ResponseEntity<>(ResponseHandler.success("Product added successfully!"), HttpStatus.OK);
     }
+
 
     /**
      *

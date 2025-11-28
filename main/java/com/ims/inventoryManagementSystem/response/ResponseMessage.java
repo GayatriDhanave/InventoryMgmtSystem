@@ -13,4 +13,6 @@ public enum ResponseMessage {
 
     public static final String BULK_DELETE_ERROR = "Error in deleting products.";
     public static final String EXCEL_HEADER_MISSING = "Excel file is empty or missing headers.";
+    public static final String SESSION_EXPIRED = "Your session is expired. Please login again.";
+    public static final String SESSION_NOT_FOUND = "Session not found.";
 }

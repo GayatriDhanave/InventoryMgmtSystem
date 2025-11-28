@@ -39,6 +39,8 @@ public class Products {
     @ManyToOne(fetch = FetchType.EAGER)
     private UserData addedBy;
 
+    private boolean containsError;
+
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonManagedReference(value = "product-error")
     @ToString.Exclude

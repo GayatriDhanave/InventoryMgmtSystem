@@ -33,36 +33,40 @@ $('#invalid-tab').on('shown.bs.tab', function () {
     invalidTableFunction();
 });
 
-$('#errorFileBtn').click(function () {
-    $.ajax({
-        url: 'http://localhost:8080/inventoryManagementSystem_war/bulkUpload/downloadErrorFile',
-        method: 'GET',
-        xhrFields: { responseType: 'blob' },
-        headers: {
-            email: sessionStorage.getItem('email'),
-            token: sessionStorage.getItem("token")
-        },
-        success: function (data, status, xhr) {
-            const blob = new Blob([data], { type: xhr.getResponseHeader('Content-Type') });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'ErrorFile.xlsx';
-            a.click();
-            window.URL.revokeObjectURL(url);
-        },
-        error: function (xhr, status, error) {
-            console.error("Download failed:", status, error, xhr.responseText);
-            showToast("Download Failed!", "error");
-        }
-    });
-});
+function downloadErrorFile(selectedId){
+    // $('#errorFileBtn').click(function () {
+        $.ajax({
+            url: 'http://localhost:8080/inventoryManagementSystem_war/bulkUpload/downloadErrorFile',
+            method: 'GET',
+            xhrFields: { responseType: 'blob' },
+            headers: {
+                email: localStorage.getItem('email'),
+                token: localStorage.getItem("token")
+            },
+            success: function (data, status, xhr) {
+                const blob = new Blob([data], { type: xhr.getResponseHeader('Content-Type') });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'ErrorFile.xlsx';
+                a.click();
+                window.URL.revokeObjectURL(url);
+            },
+            error: function (xhr, status, error) {
+                console.error("Download failed:", status, error, xhr.responseText);
+                showToast("Download Failed!", "error");
+            }
+        });
+    // });
+}
 
 
 $('#bulkUploadBtn').click(async function (e) {
     e.preventDefault();
 
     const inputFile = $('#bulkFile')[0];
+    // TODO file extension check and after uploading wrong file it should return invalid file msg currently redicrts to login
+
 
     if (inputFile.files.length === 0) {
         showToast("Please select a file!", "error");
@@ -87,8 +91,8 @@ $('#bulkUploadBtn').click(async function (e) {
         processData: false,
         contentType: false,
         headers: {
-            email: sessionStorage.getItem('email'),
-            token: sessionStorage.getItem("token")
+            email: localStorage.getItem('email'),
+            token: localStorage.getItem("token")
         },
         success: function (response, status, xhr) {
             showToast("File uploaded successfully!", "success");
@@ -125,8 +129,8 @@ function fileAjax() {
         type: 'GET',
         data: filters,
         headers: {
-            email: sessionStorage.getItem('email'),
-            token: sessionStorage.getItem("token")
+            email: localStorage.getItem('email'),
+            token: localStorage.getItem("token")
         },
         dataType: 'json',
         success: function (resp) {
@@ -144,7 +148,7 @@ function fileAjax() {
             if (xhr.status === 401) {
                 // alert("Session expired. Please login again.");
                 showToast("Please login again!", "error");
-                sessionStorage.clear();
+                localStorage.clear();
                 window.location.href = "index.html";
             } else {
                 showToast("Error getting file upload history!", "error");
@@ -173,11 +177,32 @@ function fileUploadTableFunction() {
         },
         columns: [
 
-            { data: null,  orderable: false },
-            { data: 'fileName' ,  orderable: false},
-            { data: 'uploadedDate',  orderable: false },
-            { data: 'fileStatus',  orderable: false },
-            ]
+            {data: null, orderable: false},
+            {data: 'fileName', orderable: false},
+            {data: 'uploadedDate', orderable: false},
+            {data: 'fileStatus', orderable: false},
+            // {
+            //     data: null, /*displayDwldBtn('${row.productId}')*/
+            //     render: function(d, t, row) {
+            //         if(row.fileStatus==="ERROR_IN_RECORDS"){
+            //             `<i class="fa-solid fa-download" style="color: #6b8bc2;" onclick="downloadErrorFile('${row.productId}')"></i> `
+            //         } else {
+            //             `<i class="fa-solid fa-download" style="color: #6b8bc2;"></i> `
+            //         }
+            //         }
+            // }
+            {
+                data: null,
+                orderable: false,
+                render: function (d, t, row) {
+                    if (row.fileStatus === "ERROR_IN_RECORDS") {
+                        return `<i class="fa-solid fa-download" style="color:#1d4bc5;" 
+                                    onclick="downloadErrorFile('${row.productId}')"></i>`;
+                    }
+                    return `<i class="fa-solid fa-download" style="color:#6b8bc2;"></i>`;
+                }
+            }
+        ]
     });
     applySerialNumber('#fileUploadTable', 0);
 }
@@ -200,8 +225,8 @@ function validAjax() {
         type: 'GET',
         data: filters,
         headers: {
-            email: sessionStorage.getItem('email'),
-            token: sessionStorage.getItem("token")
+            email: localStorage.getItem('email'),
+            token: localStorage.getItem("token")
         },
         dataType: 'json',
         success: function (resp) {
@@ -217,7 +242,7 @@ function validAjax() {
         error: function (xhr) {
             if (xhr.status === 401) {
                 // alert("Session expired. Please login again.");
-                sessionStorage.clear();
+                localStorage.clear();
                 window.location.href = "index.html";
             } else {
                 showToast("Error fetching products!", "error");
@@ -265,8 +290,8 @@ function invalidAjax() {
         url: 'http://localhost:8080/inventoryManagementSystem_war/products/v1/getProductWithErrors',
         type: 'GET',
         headers: {
-            email: sessionStorage.getItem('email'),
-            token: sessionStorage.getItem('token')
+            email: localStorage.getItem('email'),
+            token: localStorage.getItem('token')
         },
         dataType: 'json'
     }).then(resp => {
@@ -332,7 +357,7 @@ function invalidTableFunction() {
 
             { data: null,
                 render: (d, t, row) =>
-                    `<i class="fas fa-edit edit-icon" onclick="editProduct('${row.productId}')"></i> <i class="fa-solid fa-circle-info" onclick="viewProduct('${row.productId}')"></i>  <i class="fas fa-trash-alt delete-icon" onclick="deleteProduct('${row.productId}')"></i>`}
+                    `<i class="fas fa-edit edit-icon" style="color: #1d4bc5" onclick="editProduct('${row.productId}')"></i> &nbsp <i class="fa-solid fa-eye" style="color: #1d4bc5" onclick="viewProduct('${row.productId}')"></i> &nbsp <i class="fas fa-trash-alt delete-icon" style="color: #1d4bc5" onclick="deleteProduct('${row.productId}')"></i>`}
 
         ]
     });
@@ -355,8 +380,8 @@ function checkActiveUpload() {
         url: 'http://localhost:8080/inventoryManagementSystem_war/bulkUpload/checkActiveUpload',
         method: 'GET',
         headers: {
-            email: sessionStorage.getItem('email'),
-            token: sessionStorage.getItem("token")
+            email: localStorage.getItem('email'),
+            token: localStorage.getItem("token")
         }
     });
 }
@@ -420,6 +445,7 @@ $('#editProductForm').validate({
         $(element).removeClass("invalid-field").css("border", "");
     },
     submitHandler: function (form) {
+        $('#generalPopup').html("Are you sure you want to edit the product?")
         let productData = {
             id:$('#productId').val(),
             productName: $('#editProductName').val(),
@@ -435,8 +461,8 @@ $('#editProductForm').validate({
             contentType: "application/json",
             data: JSON.stringify(productData),
             headers: {
-                email: sessionStorage.getItem('email'),
-                token: sessionStorage.getItem("token")
+                email: localStorage.getItem('email'),
+                token: localStorage.getItem("token")
             },
             success: function (response) {
                 // alert("Product updated successfully!");
@@ -458,8 +484,8 @@ function viewProduct(selectedId){
         url: 'http://localhost:8080/inventoryManagementSystem_war/products/v1/getProduct?productId=' + selectedId,
         method: 'GET',
         headers: {
-            email: sessionStorage.getItem('email'),
-            Authorization: "Bearer " + sessionStorage.getItem("token")
+            email: localStorage.getItem('email'),
+            Authorization: "Bearer " + localStorage.getItem("token")
         },
         success: function (resp) {
             const product = resp.data;
@@ -496,8 +522,8 @@ function deleteProduct(selectedId){
         url: 'http://localhost:8080/inventoryManagementSystem_war/products/v1/getProduct?productId=' + selectedId,
         method: 'DELETE',
         headers: {
-            email: sessionStorage.getItem('email'),
-            token: sessionStorage.getItem("token")
+            email: localStorage.getItem('email'),
+            token: localStorage.getItem("token")
         },
         success: function (resp){
             showToast("Products deleted successfully!", "success");
@@ -518,8 +544,8 @@ function editProduct(selectedId){
         url: 'http://localhost:8080/inventoryManagementSystem_war/products/v1/getProduct?productId=' + selectedId,
         method: 'GET',
         headers: {
-            email: sessionStorage.getItem('email'),
-            token: sessionStorage.getItem("token")
+            email: localStorage.getItem('email'),
+            token: localStorage.getItem("token")
         },
         success: function (resp) {
             const product = resp.data;

@@ -13,4 +13,7 @@ public enum ResponseCode {
 
     public static final String BULK_DELETE_ERROR = "008";
     public static final String EXCEL_HEADER_MISSING = "009";
+    public static final String SESSION_EXPIRED = "010";
+    public static final String SESSION_NOT_FOUND = "011";
+    public static final String INVALID_TOKEN ="012" ;
 }

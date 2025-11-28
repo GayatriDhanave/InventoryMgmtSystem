@@ -24,5 +24,7 @@ public class ErrorRecords {
 
     private String errorField;
 
+    private String errorValue;
+
     private String errorMessage;
 }
